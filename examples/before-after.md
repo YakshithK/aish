@@ -3,6 +3,10 @@
 Use this flow for the 45-60 second launch demo.
 
 ```bash
+# 0. Adoption setup: teach agents in this repo to prefer AgentShell.
+aish init
+aish doctor
+
 # 1. Human-oriented project map can be noisy.
 find . -maxdepth 3 -type f
 

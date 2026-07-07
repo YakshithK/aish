@@ -32,6 +32,15 @@ def build_parser() -> argparse.ArgumentParser:
     status.add_argument("path", nargs="?", default=".")
     status.set_defaults(handler=_run_status)
 
+    init = subparsers.add_parser("init", help="install agent instructions for this repo")
+    init.add_argument("path", nargs="?", default=".")
+    init.add_argument("--force", action="store_true", help="overwrite existing instruction files")
+    init.set_defaults(handler=_run_init)
+
+    doctor = subparsers.add_parser("doctor", help="check AgentShell setup")
+    doctor.add_argument("path", nargs="?", default=".")
+    doctor.set_defaults(handler=_run_doctor)
+
     test = subparsers.add_parser("test", help="run and summarize a test command")
     test.add_argument("cmd", nargs=argparse.REMAINDER)
     test.set_defaults(handler=_run_test)
@@ -81,6 +90,18 @@ def _run_search(args: argparse.Namespace) -> CommandResult:
 
 def _run_status(args: argparse.Namespace) -> CommandResult:
     from .commands.status import run
+
+    return run(args.path)
+
+
+def _run_init(args: argparse.Namespace) -> CommandResult:
+    from .commands.init import run
+
+    return run(args.path, force=args.force)
+
+
+def _run_doctor(args: argparse.Namespace) -> CommandResult:
+    from .commands.doctor import run
 
     return run(args.path)
 

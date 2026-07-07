@@ -10,6 +10,8 @@ def test_help_exits_zero(capsys) -> None:
         assert exc.code == 0
     out = capsys.readouterr().out
     assert "tree" in out
+    assert "init" in out
+    assert "doctor" in out
     assert "test" in out
 
 

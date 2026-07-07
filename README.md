@@ -7,6 +7,8 @@ Terminals were designed for humans. Coding agents now run `tree`, `cat`, `grep`,
 `aish` wraps the common commands into compact observations built for agents:
 
 ```bash
+aish init
+aish doctor
 aish tree
 aish view README.md
 aish view src/auth.py:1-80
@@ -31,7 +33,46 @@ From GitHub after the repo is public:
 pipx install git+https://github.com/<owner>/<repo>.git
 ```
 
+Then install agent instructions in the repo:
+
+```bash
+aish init
+aish doctor
+```
+
 ## Commands
+
+### `aish init`
+
+Writes repo-local instruction files so agents naturally prefer AgentShell:
+
+```text
+agent_rules=installed created=3 updated=0 skipped=0
+create AGENTS.md
+create CLAUDE.md
+create .cursor/rules/agentshell.mdc
+suggestion=run "aish doctor"
+```
+
+Files created:
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `.cursor/rules/agentshell.mdc`
+
+Existing files are skipped by default. Use `aish init --force` to refresh them.
+
+### `aish doctor`
+
+Checks whether AgentShell is installed and whether the repo has agent rules:
+
+```text
+aish=installed version=0.1.0
+git_repo=true
+rg=true
+agent_rules=ok present=3 missing=0
+suggestion=ready
+```
 
 ### `aish tree`
 
