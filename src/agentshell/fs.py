@@ -10,6 +10,8 @@ from .output import AishError, EXIT_RUNTIME, EXIT_USAGE
 
 IGNORED_NAMES = {
     ".git",
+    ".agents",
+    ".codex",
     "node_modules",
     "dist",
     "build",
