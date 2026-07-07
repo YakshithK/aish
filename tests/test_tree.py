@@ -23,12 +23,14 @@ def test_tree_summarizes_project_and_ignores_noise(tmp_path: Path) -> None:
 
 
 def test_tree_does_not_follow_symlinked_dirs(tmp_path: Path) -> None:
-    real = tmp_path / "real"
+    root = tmp_path / "root"
+    root.mkdir()
+    real = tmp_path / "outside"
     real.mkdir()
     (real / "secret.txt").write_text("secret", encoding="utf-8")
-    (tmp_path / "linked").symlink_to(real, target_is_directory=True)
+    (root / "linked").symlink_to(real, target_is_directory=True)
 
-    result = run(str(tmp_path))
+    result = run(str(root))
 
     assert "secret.txt" not in result.stdout
     assert "linked@" in result.stdout
