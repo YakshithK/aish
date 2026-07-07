@@ -1,0 +1,94 @@
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+import traceback
+
+from .output import AishError, CommandResult, EXIT_RUNTIME
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="aish",
+        description="Compact terminal observations for AI coding agents.",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    tree = subparsers.add_parser("tree", help="show compact project structure")
+    tree.add_argument("path", nargs="?", default=".")
+    tree.set_defaults(handler=_run_tree)
+
+    view = subparsers.add_parser("view", help="safely view a file or line range")
+    view.add_argument("target")
+    view.set_defaults(handler=_run_view)
+
+    search = subparsers.add_parser("search", help="search compactly")
+    search.add_argument("query")
+    search.add_argument("path", nargs="?", default=".")
+    search.set_defaults(handler=_run_search)
+
+    status = subparsers.add_parser("status", help="show compact git status")
+    status.add_argument("path", nargs="?", default=".")
+    status.set_defaults(handler=_run_status)
+
+    test = subparsers.add_parser("test", help="run and summarize a test command")
+    test.add_argument("cmd", nargs=argparse.REMAINDER)
+    test.set_defaults(handler=_run_test)
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    try:
+        args = parser.parse_args(argv)
+        result: CommandResult = args.handler(args)
+    except AishError as exc:
+        print(exc.message, file=sys.stderr)
+        return exc.exit_code
+    except Exception as exc:  # pragma: no cover - debug branch covered via CLI smoke.
+        if os.environ.get("AISH_DEBUG") == "1":
+            traceback.print_exc()
+        else:
+            print(f"error=unexpected detail={type(exc).__name__}: {exc}", file=sys.stderr)
+        return EXIT_RUNTIME
+
+    if result.stdout:
+        print(result.stdout, end="")
+    if result.stderr:
+        print(result.stderr, end="", file=sys.stderr)
+    return result.exit_code
+
+
+def _run_tree(args: argparse.Namespace) -> CommandResult:
+    from .commands.tree import run
+
+    return run(args.path)
+
+
+def _run_view(args: argparse.Namespace) -> CommandResult:
+    from .commands.view import run
+
+    return run(args.target)
+
+
+def _run_search(args: argparse.Namespace) -> CommandResult:
+    from .commands.search import run
+
+    return run(args.query, args.path)
+
+
+def _run_status(args: argparse.Namespace) -> CommandResult:
+    from .commands.status import run
+
+    return run(args.path)
+
+
+def _run_test(args: argparse.Namespace) -> CommandResult:
+    from .commands.test import run
+
+    cmd = args.cmd
+    if cmd and cmd[0] == "--":
+        cmd = cmd[1:]
+    return run(cmd)
