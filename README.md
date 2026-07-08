@@ -22,6 +22,7 @@ aish diff
 aish diff src/auth.py
 aish test -- python -m pytest
 aish build -- npm install
+aish benchmark
 ```
 
 The principle is progressive disclosure: summary first, exact details only when needed.
@@ -295,6 +296,22 @@ aish build -- pip install -e .
 aish build -- cargo build
 aish build -- docker build .
 ```
+
+### `aish benchmark`
+
+Runs deterministic bundled fixtures and reports raw versus compact output size
+plus evidence preservation.
+
+```text
+AgentShell benchmark
+cases=5 evidence=preserved
+
+git_diff raw_lines=42 raw_chars=1258 compact_lines=10 compact_chars=287 shrink=77.2% evidence=preserved
+preserved=files,hunks,additions,deletions,risk_markers
+```
+
+Use this for launch claims and regression checks. The benchmark is fixture
+backed, so it does not depend on the current repo state or network.
 
 ## Before/After
 

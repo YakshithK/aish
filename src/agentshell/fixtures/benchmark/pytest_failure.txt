@@ -1,0 +1,22 @@
+$ python -m pytest
+============================= test session starts ==============================
+platform linux -- Python 3.12.4, pytest-8.2.2
+rootdir: /tmp/demo
+collected 13 items
+
+tests/test_auth.py ............F
+
+=================================== FAILURES ===================================
+_____________________________ test_empty_password ______________________________
+
+    def test_empty_password():
+        response = login("a@example.com", "")
+>       assert response["status"] == 400
+E       AssertionError: expected 400 got 200
+E       assert 200 == 400
+
+tests/test_auth.py:31: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_auth.py::test_empty_password - AssertionError: expected 400 got 200
+========================= 1 failed, 12 passed in 0.42s =========================
+exit code: 1

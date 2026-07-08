@@ -70,6 +70,9 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument("cmd", nargs=argparse.REMAINDER)
     build.set_defaults(handler=_run_build)
 
+    benchmark = subparsers.add_parser("benchmark", help="measure raw vs compact fixture output")
+    benchmark.set_defaults(handler=_run_benchmark)
+
     return parser
 
 
@@ -171,3 +174,9 @@ def _run_build(args: argparse.Namespace) -> CommandResult:
     if cmd and cmd[0] == "--":
         cmd = cmd[1:]
     return run(cmd)
+
+
+def _run_benchmark(args: argparse.Namespace) -> CommandResult:
+    from .commands.benchmark import run
+
+    return run()
