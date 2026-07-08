@@ -32,6 +32,11 @@ def build_parser() -> argparse.ArgumentParser:
     status.add_argument("path", nargs="?", default=".")
     status.set_defaults(handler=_run_status)
 
+    diff = subparsers.add_parser("diff", help="summarize git diffs without dumping full patches")
+    diff.add_argument("target", nargs="?", default=None)
+    diff.add_argument("--staged", action="store_true", help="show staged changes")
+    diff.set_defaults(handler=_run_diff)
+
     inspect = subparsers.add_parser("inspect", help="summarize repo setup, git state, and project structure")
     inspect.add_argument("path", nargs="?", default=".")
     inspect.set_defaults(handler=_run_inspect)
@@ -108,6 +113,12 @@ def _run_status(args: argparse.Namespace) -> CommandResult:
     from .commands.status import run
 
     return run(args.path)
+
+
+def _run_diff(args: argparse.Namespace) -> CommandResult:
+    from .commands.diff import run
+
+    return run(target=args.target, staged=args.staged)
 
 
 def _run_inspect(args: argparse.Namespace) -> CommandResult:

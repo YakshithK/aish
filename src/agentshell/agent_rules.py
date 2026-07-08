@@ -8,6 +8,7 @@ ROUTING_TABLE = """| Need | Prefer | Avoid |
 | read exact lines | `aish view <file>:<start>-<end>` | dumping whole files |
 | search code | `aish search "<query>"` | raw `grep -R`, huge `rg` output |
 | git state | `aish status` | verbose `git status` |
+| inspect changes | `aish diff` or `aish diff <file>` | raw `git diff`, `git show --patch` |
 | tests | `aish test -- <command>` | raw noisy test logs |"""
 
 
@@ -65,6 +66,7 @@ Prefer compact AgentShell commands:
 - `aish view <file>:<start>-<end>` for exact lines
 - `aish search "<query>"` for code search
 - `aish status` for git status
+- `aish diff` or `aish diff <file>` for compact code changes
 - `aish test -- <command>` for summarized test output
 
 Avoid raw commands that dump large human-oriented output:
@@ -73,6 +75,7 @@ Avoid raw commands that dump large human-oriented output:
 - `tree`
 - `find .`
 - `grep -R`
+- raw `git diff`
 - verbose test logs
 
 Principle: summary first, exact details only when needed.
@@ -81,4 +84,3 @@ Preserve exact paths, line numbers, commands, exit codes, and error names from
 `aish` output. If an `aish` command omits detail, ask for a narrower range or
 query rather than dumping raw output.
 """
-

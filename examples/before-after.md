@@ -30,7 +30,12 @@ aish search CommandResult
 git status
 aish status
 
-# 6. Test output summarized for the next decision.
+# 6. Diff summary before patch detail.
+git diff
+aish diff
+aish diff src/agentshell/commands/view.py
+
+# 7. Test output summarized for the next decision.
 python -m pytest
 aish test -- python -m pytest
 ```

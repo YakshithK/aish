@@ -18,6 +18,8 @@ aish view README.md
 aish view src/auth.py:1-80
 aish search login
 aish status
+aish diff
+aish diff src/auth.py
 aish test -- python -m pytest
 ```
 
@@ -44,6 +46,7 @@ This writes instructions for coding agents so they prefer:
 - `aish view` over `cat`
 - `aish search` over noisy grep output
 - `aish status` over verbose `git status`
+- `aish diff` over raw patch dumps
 - `aish test -- <command>` over raw test logs
 
 Principle: summary first, details only when needed.
@@ -101,6 +104,7 @@ Generated instructions include a routing table:
 | read exact lines | `aish view <file>:<start>-<end>` | dumping whole files |
 | search code | `aish search "<query>"` | raw `grep -R`, huge `rg` output |
 | git state | `aish status` | verbose `git status` |
+| inspect changes | `aish diff` or `aish diff <file>` | raw `git diff`, `git show --patch` |
 | tests | `aish test -- <command>` | raw noisy test logs |
 ```
 
@@ -220,6 +224,36 @@ branch=main changed=4 staged=1 unstaged=2 untracked=1
  M src/auth.py
 A  tests/test_auth.py
 ?? notes.md
+```
+
+### `aish diff`
+
+Summarizes git diffs before showing any patch hunks.
+
+```text
+diff=unstaged files=3 added=42 removed=18
+M src/auth.py +22 -7
+M tests/test_auth.py +18 -2
+M README.md +2 -9
+next: aish diff src/auth.py
+```
+
+Ask for one file when exact changed lines are needed:
+
+```bash
+aish diff src/auth.py
+aish diff --staged
+```
+
+File-specific output is bounded:
+
+```text
+file=src/auth.py added=22 removed=7
+@@ lines=44-71
++ if not password:
++     return error(400)
+- return login_user(email, password)
+omitted=context_lines,unchanged_hunks
 ```
 
 ### `aish test -- <command>`
