@@ -16,7 +16,10 @@ def test_init_writes_agent_instruction_files(tmp_path: Path) -> None:
     assert (tmp_path / "AGENTS.md").exists()
     assert (tmp_path / "CLAUDE.md").exists()
     assert (tmp_path / ".cursor" / "rules" / "agentshell.mdc").exists()
-    assert "use `aish tree`" in (tmp_path / "AGENTS.md").read_text(encoding="utf-8").lower()
+    agents = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
+    assert "For repository inspection, prefer AgentShell commands" in agents
+    assert "| inspect project structure | `aish tree` |" in agents
+    assert "Principle: summary first, details only when needed." in agents
 
 
 def test_init_skips_existing_files_without_force(tmp_path: Path) -> None:

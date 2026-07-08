@@ -4,7 +4,7 @@ AgentShell is a token-optimized shell toolkit for AI coding agents.
 
 Terminals were designed for humans. Coding agents now run `tree`, `cat`, `grep`, `git status`, and test commands constantly, then spend context on banners, progress bars, passing-test noise, giant file dumps, and repeated stack frames.
 
-`aish` wraps the common commands into compact observations built for agents:
+`aish` wraps common commands into compact observations built for agents:
 
 ```bash
 aish init
@@ -19,6 +19,31 @@ aish test -- python -m pytest
 
 The principle is progressive disclosure: summary first, exact details only when needed.
 
+## Agent workflow install
+
+Install the CLI:
+
+```bash
+pipx install git+https://github.com/YakshithK/agentshell.git
+```
+
+Then install repo-local agent rules:
+
+```bash
+aish init
+aish doctor
+```
+
+This writes instructions for coding agents so they prefer:
+
+- `aish tree` over `tree`, `find .`, or `ls -R`
+- `aish view` over `cat`
+- `aish search` over noisy grep output
+- `aish status` over verbose `git status`
+- `aish test -- <command>` over raw test logs
+
+Principle: summary first, details only when needed.
+
 ## Install
 
 From a checkout:
@@ -27,10 +52,10 @@ From a checkout:
 python -m pip install -e .
 ```
 
-From GitHub after the repo is public:
+From GitHub:
 
 ```bash
-pipx install git+https://github.com/<owner>/<repo>.git
+pipx install git+https://github.com/YakshithK/agentshell.git
 ```
 
 Then install agent instructions in the repo:
@@ -61,6 +86,19 @@ Files created:
 - `.cursor/rules/agentshell.mdc`
 
 Existing files are skipped by default. Use `aish init --force` to refresh them.
+
+Generated instructions include a routing table:
+
+```md
+| Need | Prefer | Avoid |
+|---|---|---|
+| inspect project structure | `aish tree` | `tree`, `find .`, `ls -R` |
+| read a file | `aish view <file>` | `cat <file>` |
+| read exact lines | `aish view <file>:<start>-<end>` | dumping whole files |
+| search code | `aish search "<query>"` | raw `grep -R`, huge `rg` output |
+| git state | `aish status` | verbose `git status` |
+| tests | `aish test -- <command>` | raw noisy test logs |
+```
 
 ### `aish doctor`
 
