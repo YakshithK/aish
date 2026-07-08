@@ -261,12 +261,14 @@ omitted=context_lines,unchanged_hunks
 Runs the command after `--`, preserves the child exit code, and summarizes failures.
 
 ```text
-status=failed exit=1 passed=? failed=? command="python -m pytest"
+status=failed exit=1 passed=? failed=2 command="python -m pytest"
 FAIL tests/test_auth.py::test_empty_password AssertionError: expected 400
 omitted=passing_tests,progress,full_stack_traces
 parser=pytest
 truncated=false
 ```
+
+Known parsers include pytest, unittest, Jest/Vitest-style JavaScript output, Cargo, and Go. Unknown runners fall back to a bounded useful tail with `parser=generic`.
 
 ## Before/After
 

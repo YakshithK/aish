@@ -47,6 +47,52 @@ def test_generic_failure_uses_bounded_tail() -> None:
     assert "parser=generic" in result.stdout
 
 
+def test_javascript_failure_summary() -> None:
+    script = (
+        "print('FAIL  src/auth.test.ts')\n"
+        "print('  × rejects empty password')\n"
+        "print('Tests: 1 failed, 3 passed')\n"
+        "raise SystemExit(1)"
+    )
+
+    result = run([sys.executable, "-c", script])
+
+    assert "status=failed exit=1 passed=3 failed=1" in result.stdout
+    assert "FAIL src/auth.test.ts rejects empty password" in result.stdout
+    assert "parser=javascript" in result.stdout
+
+
+def test_cargo_failure_summary() -> None:
+    script = (
+        "print('---- tests::rejects_empty stdout ----')\n"
+        "print(\"thread 'tests::rejects_empty' panicked at src/lib.rs:12:5: expected 400\")\n"
+        "print('test result: FAILED. 2 passed; 1 failed; 0 ignored')\n"
+        "raise SystemExit(101)"
+    )
+
+    result = run([sys.executable, "-c", script])
+
+    assert result.exit_code == 101
+    assert "passed=2 failed=1" in result.stdout
+    assert "FAIL tests::rejects_empty src/lib.rs:12:5: expected 400" in result.stdout
+    assert "parser=cargo" in result.stdout
+
+
+def test_go_failure_summary() -> None:
+    script = (
+        "print('--- FAIL: TestLogin (0.00s)')\n"
+        "print('    auth_test.go:12: expected status 400')\n"
+        "print('FAIL')\n"
+        "raise SystemExit(1)"
+    )
+
+    result = run([sys.executable, "-c", script])
+
+    assert "passed=? failed=1" in result.stdout
+    assert "FAIL TestLogin auth_test.go:12 expected status 400" in result.stdout
+    assert "parser=go" in result.stdout
+
+
 def test_command_not_found_is_compact() -> None:
     result = run(["definitely-not-aish-command"])
 
