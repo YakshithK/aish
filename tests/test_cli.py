@@ -12,6 +12,7 @@ def test_help_exits_zero(capsys) -> None:
     assert "tree" in out
     assert "init" in out
     assert "doctor" in out
+    assert "build" in out
     assert "diff" in out
     assert "inspect" in out
     assert "install-agent" in out

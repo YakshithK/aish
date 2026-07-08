@@ -9,7 +9,8 @@ ROUTING_TABLE = """| Need | Prefer | Avoid |
 | search code | `aish search "<query>"` | raw `grep -R`, huge `rg` output |
 | git state | `aish status` | verbose `git status` |
 | inspect changes | `aish diff` or `aish diff <file>` | raw `git diff`, `git show --patch` |
-| tests | `aish test -- <command>` | raw noisy test logs |"""
+| tests | `aish test -- <command>` | raw noisy test logs |
+| builds/install | `aish build -- <command>` | raw compiler, package install, or build logs |"""
 
 
 AGENT_INSTRUCTIONS = f"""# AgentShell Instructions
@@ -20,6 +21,7 @@ Do not use `cat` on source files unless `aish view` is insufficient.
 Do not use raw `tree`, `find .`, or `ls -R` unless `aish tree` is insufficient.
 Do not dump large search results; use `aish search` first.
 Do not dump large test logs; use `aish test -- <command>`.
+Do not dump large build or install logs; use `aish build -- <command>`.
 
 ## Routing
 
@@ -68,6 +70,7 @@ Prefer compact AgentShell commands:
 - `aish status` for git status
 - `aish diff` or `aish diff <file>` for compact code changes
 - `aish test -- <command>` for summarized test output
+- `aish build -- <command>` for summarized build or install output
 
 Avoid raw commands that dump large human-oriented output:
 
@@ -77,6 +80,7 @@ Avoid raw commands that dump large human-oriented output:
 - `grep -R`
 - raw `git diff`
 - verbose test logs
+- raw build or package install logs
 
 Principle: summary first, exact details only when needed.
 

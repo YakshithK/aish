@@ -66,6 +66,10 @@ def build_parser() -> argparse.ArgumentParser:
     test.add_argument("cmd", nargs=argparse.REMAINDER)
     test.set_defaults(handler=_run_test)
 
+    build = subparsers.add_parser("build", help="run and summarize a build or install command")
+    build.add_argument("cmd", nargs=argparse.REMAINDER)
+    build.set_defaults(handler=_run_build)
+
     return parser
 
 
@@ -153,6 +157,15 @@ def _run_skill_print(args: argparse.Namespace) -> CommandResult:
 
 def _run_test(args: argparse.Namespace) -> CommandResult:
     from .commands.test import run
+
+    cmd = args.cmd
+    if cmd and cmd[0] == "--":
+        cmd = cmd[1:]
+    return run(cmd)
+
+
+def _run_build(args: argparse.Namespace) -> CommandResult:
+    from .commands.build import run
 
     cmd = args.cmd
     if cmd and cmd[0] == "--":

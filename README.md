@@ -21,6 +21,7 @@ aish status
 aish diff
 aish diff src/auth.py
 aish test -- python -m pytest
+aish build -- npm install
 ```
 
 The principle is progressive disclosure: summary first, exact details only when needed.
@@ -48,6 +49,7 @@ This writes instructions for coding agents so they prefer:
 - `aish status` over verbose `git status`
 - `aish diff` over raw patch dumps
 - `aish test -- <command>` over raw test logs
+- `aish build -- <command>` over raw build or install logs
 
 Principle: summary first, details only when needed.
 
@@ -106,6 +108,7 @@ Generated instructions include a routing table:
 | git state | `aish status` | verbose `git status` |
 | inspect changes | `aish diff` or `aish diff <file>` | raw `git diff`, `git show --patch` |
 | tests | `aish test -- <command>` | raw noisy test logs |
+| builds/install | `aish build -- <command>` | raw compiler, package install, or build logs |
 ```
 
 ### `aish doctor`
@@ -269,6 +272,29 @@ truncated=false
 ```
 
 Known parsers include pytest, unittest, Jest/Vitest-style JavaScript output, Cargo, and Go. Unknown runners fall back to a bounded useful tail with `parser=generic`.
+
+### `aish build -- <command>`
+
+Runs build, install, or compile commands and summarizes warnings/errors without dumping progress logs.
+
+```text
+status=failed exit=2 warnings=1 command="npm install"
+ERROR npm ERR! code ERESOLVE
+ERROR npm ERR! ERESOLVE unable to resolve dependency tree
+omitted=progress,downloads,successful_steps
+parser=build
+truncated=false
+```
+
+Useful wrappers:
+
+```bash
+aish build -- npm install
+aish build -- pnpm install
+aish build -- pip install -e .
+aish build -- cargo build
+aish build -- docker build .
+```
 
 ## Before/After
 

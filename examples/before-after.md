@@ -38,6 +38,10 @@ aish diff src/agentshell/commands/view.py
 # 7. Test output summarized for the next decision.
 python -m pytest
 aish test -- python -m pytest
+
+# 8. Build/install logs summarized for root cause.
+python -m build
+aish build -- python -m build
 ```
 
 End the recording with:
