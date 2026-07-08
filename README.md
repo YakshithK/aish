@@ -9,6 +9,9 @@ Terminals were designed for humans. Coding agents now run `tree`, `cat`, `grep`,
 ```bash
 aish init
 aish doctor
+aish doctor --agents
+aish install-agent claude
+aish skill print generic
 aish tree
 aish view README.md
 aish view src/auth.py:1-80
@@ -110,6 +113,50 @@ git_repo=true
 rg=true
 agent_rules=ok present=3 missing=0
 suggestion=ready
+```
+
+Use `--agents` to include global skill/rule installs:
+
+```text
+global_claude_skill=missing path=/home/me/.claude/skills/agentshell/SKILL.md
+global_codex_skill=missing path=/home/me/.codex/skills/agentshell/SKILL.md
+global_cursor_skill=missing path=/home/me/.cursor/rules/agentshell.mdc
+global_opencode_skill=missing path=/home/me/.config/opencode/skills/agentshell/SKILL.md
+agent_suggestion=aish install-agent claude
+```
+
+### `aish install-agent`
+
+Installs global AgentShell skills/rules for agent hosts:
+
+```bash
+aish install-agent claude
+aish install-agent codex
+aish install-agent cursor
+aish install-agent opencode
+aish install-agent all
+```
+
+Example output:
+
+```text
+agent_install=installed host=claude created=1 updated=0 skipped=0
+create host=claude path=/home/me/.claude/skills/agentshell/SKILL.md
+suggestion=run "aish doctor --agents"
+```
+
+Existing global files are skipped by default. Use `--force` to refresh them.
+
+### `aish skill print`
+
+Prints the AgentShell skill/rule content for manual installation or copy-paste:
+
+```bash
+aish skill print generic
+aish skill print claude
+aish skill print codex
+aish skill print cursor
+aish skill print opencode
 ```
 
 ### `aish tree`
