@@ -25,6 +25,7 @@ def test_agent_workflow_smoke(tmp_path: Path) -> None:
 
     assert "agent_rules=installed" in _aish(sample, "init").stdout
     assert "agent_rules=ok" in _aish(sample, "doctor").stdout
+    assert "next: aish view <important-file>" in _aish(sample, "inspect").stdout
     assert _aish(sample, "tree").returncode == 0
     assert "project=python" in _aish(sample, "tree").stdout
     assert "src/auth.py count=1 lines=1" in _aish(sample, "search", "login").stdout

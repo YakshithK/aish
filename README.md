@@ -10,6 +10,7 @@ Terminals were designed for humans. Coding agents now run `tree`, `cat`, `grep`,
 aish init
 aish doctor
 aish doctor --agents
+aish inspect
 aish install-agent claude
 aish skill print generic
 aish tree
@@ -157,6 +158,18 @@ aish skill print claude
 aish skill print codex
 aish skill print cursor
 aish skill print opencode
+```
+
+### `aish inspect`
+
+Runs the launch-demo inspection loop: setup state, git state, project map, and a next command.
+
+```text
+inspect=ok path=.
+project: project=python files=24 dirs=6 important=pyproject.toml,src,tests
+git: branch=main changed=0 staged=0 unstaged=0 untracked=0
+rules: agent_rules=missing present=0 missing=3
+next: aish init
 ```
 
 ### `aish tree`

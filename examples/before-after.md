@@ -7,27 +7,30 @@ Use this flow for the 45-60 second launch demo.
 aish init
 aish doctor
 
-# 1. Human-oriented project map can be noisy.
+# 1. Agent-native repo inspection workflow.
+aish inspect
+
+# 2. Human-oriented project map can be noisy.
 find . -maxdepth 3 -type f
 
 # Agent-oriented map.
 aish tree
 
-# 2. Raw file dumps can destroy context.
+# 3. Raw file dumps can destroy context.
 cat src/agentshell/commands/view.py
 
 # AgentShell shows exact line numbers for short files and outlines for long files.
 aish view src/agentshell/commands/view.py
 
-# 3. Search summary instead of every matching line.
+# 4. Search summary instead of every matching line.
 rg "CommandResult" src tests
 aish search CommandResult
 
-# 4. Git status without prose.
+# 5. Git status without prose.
 git status
 aish status
 
-# 5. Test output summarized for the next decision.
+# 6. Test output summarized for the next decision.
 python -m pytest
 aish test -- python -m pytest
 ```

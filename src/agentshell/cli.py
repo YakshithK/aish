@@ -32,6 +32,10 @@ def build_parser() -> argparse.ArgumentParser:
     status.add_argument("path", nargs="?", default=".")
     status.set_defaults(handler=_run_status)
 
+    inspect = subparsers.add_parser("inspect", help="summarize repo setup, git state, and project structure")
+    inspect.add_argument("path", nargs="?", default=".")
+    inspect.set_defaults(handler=_run_inspect)
+
     init = subparsers.add_parser("init", help="install agent instructions for this repo")
     init.add_argument("path", nargs="?", default=".")
     init.add_argument("--force", action="store_true", help="overwrite existing instruction files")
@@ -102,6 +106,12 @@ def _run_search(args: argparse.Namespace) -> CommandResult:
 
 def _run_status(args: argparse.Namespace) -> CommandResult:
     from .commands.status import run
+
+    return run(args.path)
+
+
+def _run_inspect(args: argparse.Namespace) -> CommandResult:
+    from .commands.inspect import run
 
     return run(args.path)
 
