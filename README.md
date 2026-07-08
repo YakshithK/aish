@@ -31,7 +31,7 @@ The principle is progressive disclosure: summary first, exact details only when 
 Install the CLI:
 
 ```bash
-pipx install git+https://github.com/YakshithK/agentshell.git
+pipx install git+https://github.com/YakshithK/aish.git
 ```
 
 Then install repo-local agent rules:
@@ -64,7 +64,7 @@ python -m pip install -e .
 From GitHub:
 
 ```bash
-pipx install git+https://github.com/YakshithK/agentshell.git
+pipx install git+https://github.com/YakshithK/aish.git
 ```
 
 Then install agent instructions in the repo:
