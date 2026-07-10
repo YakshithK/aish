@@ -49,9 +49,13 @@ aish init
 aish doctor --agents
 ```
 
-This writes repo-local instructions and checks whether global agent routing is
-installed. If global routing is missing, interactive shells ask whether to add
-it. In non-interactive shells, use `aish init --yes`.
+This checks whether global agent routing is installed before writing repo-local
+instructions. If global routing is missing, interactive shells ask whether to
+add it. Choosing yes installs the global routing and stops there. Run `aish init`
+again in the repo after that if you also want repo-local files.
+
+In non-interactive shells, use `aish init --yes` for the same global-only
+first step.
 
 The installed rules make coding agents prefer:
 
@@ -94,7 +98,23 @@ aish doctor --agents
 
 ### `aish init`
 
-Writes repo-local instruction files and handles first-run global agent routing:
+Handles first-run global agent routing before repo-local instruction files.
+
+If global routing is missing and you accept the prompt, or run
+`aish init --yes`, AgentShell installs global routing and does not write repo
+files in that run:
+
+```text
+global_agent_routing=installed created=4 updated=0 skipped=0
+create global host=claude path=/home/me/.claude/skills/agentshell/SKILL.md
+create global host=codex path=/home/me/.codex/skills/agentshell/SKILL.md
+create global host=cursor path=/home/me/.cursor/rules/agentshell.mdc
+create global host=opencode path=/home/me/.config/opencode/skills/agentshell/SKILL.md
+suggestion=run "aish doctor --agents"
+```
+
+If global routing is already present, or you decline the prompt, `aish init`
+writes repo-local files:
 
 ```text
 agent_rules=installed created=3 updated=0 skipped=0
@@ -128,8 +148,8 @@ Global routing is installed once per machine/agent host:
 Useful init modes:
 
 ```bash
-aish init              # repo rules; ask about global routing in an interactive shell
-aish init --yes        # repo rules plus missing global routing
+aish init              # if globals are missing, ask; yes installs globals only
+aish init --yes        # install missing global routing only
 aish init --no-global  # repo rules only
 aish init --force      # refresh existing repo rules
 ```
