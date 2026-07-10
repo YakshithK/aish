@@ -1,7 +1,8 @@
 import process from 'node:process';
 import { AishError, EXIT_RUNTIME, EXIT_USAGE, result } from './output.js';
+import { observeCommand, ARBITRARY_TIMEOUT_DEFAULT } from './command-observer.js';
 
-export const commands = ['tree', 'view', 'search', 'status', 'diff', 'inspect', 'init', 'doctor', 'skill', 'test', 'build', 'benchmark'];
+export const commands = ['tree', 'view', 'search', 'status', 'diff', 'inspect', 'init', 'doctor', 'skill', 'test', 'build', 'benchmark', 'run'];
 const summaries = {
   tree: 'show compact project structure', view: 'safely view a file or line range', search: 'search compactly',
   status: 'show compact git status', diff: 'summarize git diffs without dumping full patches',
@@ -9,6 +10,7 @@ const summaries = {
   doctor: 'check AgentShell setup',
   skill: 'print AgentShell skill/rule content', test: 'run and summarize a test command',
   build: 'run and summarize a build or install command', benchmark: 'measure raw vs compact fixture output',
+  run: 'observe an external command, including native-name collisions',
 };
 
 function help() {
@@ -20,6 +22,7 @@ function commandHelp(command) {
     tree: '[path]', view: 'target', search: 'query [path]', status: '[path]', diff: '[--staged] [target]', inspect: '[path]',
     init: '[--force] [--yes] [--no-global] [path]', doctor: '[--agents] [path]',
     skill: 'print {claude,codex,cursor,opencode,generic}', test: '-- <command...>', build: '-- <command...>', benchmark: '',
+    run: '[--timeout SECONDS] -- <command...>',
   }[command];
   return `usage: aish ${command}${usage ? ` ${usage}` : ''}\n\n${summaries[command]}\n`;
 }
@@ -32,11 +35,11 @@ function rejectUnknownOptions(args, allowed = []) {
 function positional(args) { return args.filter((arg) => !arg.startsWith('-')); }
 function atMost(items, count) { if (items.length > count) usage(`unexpected_argument=${items[count]}`); }
 
-export async function dispatch(argv) {
+export async function dispatch(argv, { observer = observeCommand } = {}) {
   if (argv[0] === '--help' || argv[0] === '-h') return result(help());
   if (!argv.length) usage('missing=command');
   const [command, ...args] = argv;
-  if (!commands.includes(command)) usage(`unknown_command=${command}`);
+  if (!commands.includes(command)) return observer(argv, { timeoutSeconds: ARBITRARY_TIMEOUT_DEFAULT });
   if (args[0] === '--help' || args[0] === '-h') return result(commandHelp(command));
 
   if (command === 'tree' || command === 'status' || command === 'inspect') {
@@ -79,8 +82,34 @@ export async function dispatch(argv) {
     if (separator !== 0) usage(`expected="${command} -- <command...>"`);
     return (await import(`./commands/${command}.js`)).run(args.slice(1));
   }
+  if (command === 'run') {
+    const { childArgv, timeoutSeconds } = parseRunArguments(args);
+    return observer(childArgv, { timeoutSeconds });
+  }
   if (command === 'benchmark') { rejectUnknownOptions(args); atMost(args, 0); return (await import('./commands/benchmark.js')).run(); }
   throw new AishError(`error=not_implemented command=${command}`, EXIT_RUNTIME);
+}
+
+function parseRunArguments(args) {
+  const separator = args.indexOf('--');
+  if (separator < 0) usage('expected="run [--timeout SECONDS] -- <command...>"');
+  const controls = args.slice(0, separator);
+  const childArgv = args.slice(separator + 1);
+  if (!childArgv.length) usage('missing=run_command');
+  let timeoutSeconds = ARBITRARY_TIMEOUT_DEFAULT;
+  let seenTimeout = false;
+  for (let index = 0; index < controls.length; index += 1) {
+    const token = controls[index];
+    if (token !== '--timeout') usage(`unknown_option=${token}`);
+    if (seenTimeout) usage('duplicate_option=--timeout');
+    const raw = controls[++index];
+    if (raw == null) usage('missing_value=--timeout');
+    const value = Number(raw);
+    if (!Number.isFinite(value) || value < 0.1 || value > 3600) usage(`invalid_timeout=${raw}`);
+    timeoutSeconds = value;
+    seenTimeout = true;
+  }
+  return { childArgv, timeoutSeconds };
 }
 
 export async function main(argv, io = process) {

@@ -11,8 +11,11 @@ test('help lists every command', async () => {
   for (const command of commands) assert.match(output.stdout, new RegExp(`\\b${command}\\b`));
 });
 
-test('unknown command exits usage', async () => {
-  await assert.rejects(() => dispatch(['nope']), (error) => error.exitCode === 2 && /unknown_command/.test(error.message));
+test('unknown command routes to the external observer', async () => {
+  let received;
+  const output = await dispatch(['nope', 'literal *'], { observer: async (argv, options) => { received = { argv, options }; return { stdout: 'ok\n', stderr: '', exitCode: 0 }; } });
+  assert.deepEqual(received, { argv: ['nope', 'literal *'], options: { timeoutSeconds: 30 } });
+  assert.equal(output.exitCode, 0);
 });
 
 test('missing command, subcommand help, and unknown options match usage semantics', async () => {
@@ -76,4 +79,32 @@ test('explicit test and build adapters preserve compatibility golden output', as
   assert.deepEqual(testOutput, { stdout: 'status=passed exit=0 command="pytest -q"\npassed=3 failed=0\ntruncated=false\n', stderr: '', exitCode: 0 });
   const buildOutput = await runBuildCommand(['npm', 'build'], { executor: async () => ({ stdout: 'warning: unused\n', stderr: '', interleaved: 'warning: unused\n', exitCode: 0, truncated: false }) });
   assert.deepEqual(buildOutput, { stdout: 'status=passed exit=0 warnings=1 command="npm build"\nWARN warning: unused\nomitted=progress,downloads,successful_steps\ntruncated=false\n', stderr: '', exitCode: 0 });
+});
+
+test('run bypasses native precedence and passes exact argv after the separator', async () => {
+  let received;
+  await dispatch(['run', '--timeout', '10.5', '--', 'tree', '$HOME', '*.js'], { observer: async (argv, options) => { received = { argv, options }; return { stdout: '', stderr: '', exitCode: 0 }; } });
+  assert.deepEqual(received, { argv: ['tree', '$HOME', '*.js'], options: { timeoutSeconds: 10.5 } });
+  const native = await dispatch(['tree', '.']);
+  assert.match(native.stdout, /root:/);
+});
+
+test('invalid run grammar exits usage without invoking the observer', async () => {
+  const invalid = [
+    ['run'], ['run', '--',], ['run', '--timeout', '--', 'x'], ['run', '--timeout', '1', '--timeout', '2', '--', 'x'],
+    ['run', '--bogus', '--', 'x'], ['run', '--timeout', 'NaN', '--', 'x'], ['run', '--timeout', '0', '--', 'x'],
+    ['run', '--timeout', '-1', '--', 'x'], ['run', '--timeout', '3601', '--', 'x'],
+  ];
+  for (const argv of invalid) {
+    let called = false;
+    await assert.rejects(() => dispatch(argv, { observer: async () => { called = true; } }), error => error.exitCode === 2, argv.join(' '));
+    assert.equal(called, false, argv.join(' '));
+  }
+});
+
+test('implicit and explicit external observations preserve missing and child exit codes', async () => {
+  let output = await dispatch(['definitely-not-aish-command']);
+  assert.equal(output.exitCode, 127); assert.match(output.stdout, /command_not_found/);
+  output = await dispatch(['run', '--', 'python3', '-c', 'raise SystemExit(9)']);
+  assert.equal(output.exitCode, 9); assert.match(output.stdout, /family=generic/);
 });
