@@ -25,6 +25,8 @@ test('init --yes installs missing global routing with injectable home', async ()
   const home = temp();
   const output = await init(d, { yes: true, home });
   assert.match(output.stdout, /global_agent_routing=installed created=4/);
+  assert.doesNotMatch(output.stdout, /agent_rules=installed/);
+  assert.equal(fs.existsSync(path.join(d, 'AGENTS.md')), false);
   const file = path.join(home, '.codex/skills/agentshell/SKILL.md');
   assert.equal(fs.readFileSync(file, 'utf8'), printSkill('codex').stdout);
   assert.match(doctor('.', true, home).stdout, /global_codex_skill=present/);
@@ -36,6 +38,7 @@ test('init without --yes reports missing global routing without installing', asy
   const output = await init(d, { home });
   assert.match(output.stdout, /global_agent_routing=missing/);
   assert.match(output.stdout, /suggestion=run "aish init --yes"/);
+  assert.equal(fs.existsSync(path.join(d, 'AGENTS.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.codex/skills/agentshell/SKILL.md')), false);
 });
 

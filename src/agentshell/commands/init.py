@@ -22,6 +22,11 @@ def run(
     no_global: bool = False,
     home: Path | None = None,
 ) -> CommandResult:
+    if not no_global:
+        missing = _missing_global_hosts(home=home)
+        if missing and (yes or _confirm_global_install(missing)):
+            return CommandResult(join_lines(_install_missing_global(missing, home=home)))
+
     root = Path(path)
     root.mkdir(parents=True, exist_ok=True)
 
@@ -55,22 +60,25 @@ def run(
         lines.append("suggestion=run \"aish init --force\" to refresh existing files")
     else:
         lines.append("suggestion=run \"aish doctor\"")
-    lines.extend(_global_routing_lines(yes=yes, no_global=no_global, home=home))
+    lines.extend(_global_routing_lines(no_global=no_global, home=home))
     return CommandResult(join_lines([summary, *lines]))
 
 
-def _global_routing_lines(yes: bool = False, no_global: bool = False, home: Path | None = None) -> list[str]:
-    missing = [host for host in HOSTS if not installs_for(host, home=home)[0].path.exists()]
-    if not missing:
-        return ["global_agent_routing=ok missing=0"]
+def _missing_global_hosts(home: Path | None = None) -> list[str]:
+    return [host for host in HOSTS if any(not install.path.exists() for install in installs_for(host, home=home))]
+
+
+def _global_routing_lines(no_global: bool = False, home: Path | None = None) -> list[str]:
     if no_global:
+        missing = _missing_global_hosts(home=home)
         return [
             "global_agent_routing=skipped",
             "missing_global_hosts=" + ",".join(missing),
             "note=repo_rules_installed_global_routing_skipped",
         ]
-    if yes or _confirm_global_install(missing):
-        return _install_missing_global(missing, home=home)
+    missing = _missing_global_hosts(home=home)
+    if not missing:
+        return ["global_agent_routing=ok missing=0"]
     return [
         "global_agent_routing=missing",
         "missing_global_hosts=" + ",".join(missing),

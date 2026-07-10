@@ -1,12 +1,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { AGENT_INSTRUCTIONS, CURSOR_INSTRUCTIONS } from '../agent-rules.js';
-import { globalRoutingLines } from '../global-routing.js';
+import { globalRoutingLines, missingGlobalHosts } from '../global-routing.js';
 import { joinLines, result } from '../output.js';
 
 export async function run(root = '.', options = {}) {
   if (typeof options === 'boolean') options = { force: options };
   const { force = false, yes = false, noGlobal = false, home } = options;
+  let routingLines = null;
+  if (!noGlobal) {
+    const missing = missingGlobalHosts(home);
+    if (missing.length) {
+      routingLines = await globalRoutingLines({ yes, home });
+      if (routingLines[0].startsWith('global_agent_routing=installed')) return result(joinLines(routingLines));
+    }
+  }
   fs.mkdirSync(root, { recursive: true });
   const files = [
     ['AGENTS.md', AGENT_INSTRUCTIONS],
@@ -31,6 +39,6 @@ export async function run(root = '.', options = {}) {
     lines.push(`${exists ? 'update' : 'create'} ${file}`);
   }
   lines.push(skipped ? 'suggestion=run "aish init --force" to refresh existing files' : 'suggestion=run "aish doctor"');
-  lines.push(...await globalRoutingLines({ yes, noGlobal, home }));
+  lines.push(...(routingLines ?? await globalRoutingLines({ noGlobal, home })));
   return result(joinLines([`agent_rules=installed created=${created} updated=${updated} skipped=${skipped}`, ...lines]));
 }

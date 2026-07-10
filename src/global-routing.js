@@ -24,15 +24,16 @@ export function missingGlobalHosts(home = os.homedir()) {
 }
 
 export async function globalRoutingLines({ yes = false, noGlobal = false, home = os.homedir() } = {}) {
-  const missing = missingGlobalHosts(home);
-  if (!missing.length) return ['global_agent_routing=ok missing=0'];
   if (noGlobal) {
+    const missing = missingGlobalHosts(home);
     return [
       'global_agent_routing=skipped',
       `missing_global_hosts=${missing.join(',')}`,
       'note=repo_rules_installed_global_routing_skipped',
     ];
   }
+  const missing = missingGlobalHosts(home);
+  if (!missing.length) return ['global_agent_routing=ok missing=0'];
   if (yes || await confirmGlobalInstall(missing)) return installMissingGlobal(missing, home);
   return [
     'global_agent_routing=missing',

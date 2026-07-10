@@ -52,6 +52,8 @@ def test_init_yes_installs_missing_global_routing(tmp_path: Path) -> None:
     result = init(str(repo), yes=True, home=home)
 
     assert "global_agent_routing=installed created=4 updated=0 skipped=0" in result.stdout
+    assert "agent_rules=installed" not in result.stdout
+    assert not (repo / "AGENTS.md").exists()
     assert (home / ".claude" / "skills" / "agentshell" / "SKILL.md").exists()
     assert (home / ".codex" / "skills" / "agentshell" / "SKILL.md").exists()
     assert (home / ".cursor" / "rules" / "agentshell.mdc").exists()
@@ -67,6 +69,7 @@ def test_init_does_not_prompt_or_install_global_routing_without_yes(tmp_path: Pa
     assert "global_agent_routing=missing" in result.stdout
     assert "missing_global_hosts=claude,codex,cursor,opencode" in result.stdout
     assert 'suggestion=run "aish init --yes" to install global agent routing' in result.stdout
+    assert (repo / "AGENTS.md").exists()
     assert not (home / ".codex" / "skills" / "agentshell" / "SKILL.md").exists()
 
 
