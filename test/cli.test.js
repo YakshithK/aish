@@ -69,7 +69,25 @@ test('observer owns missing, timeout, forced family, and parser fallback states'
 test('logs parser retains causal evidence and counts whole-word markers', () => {
   const output = parseLogs({ command: 'docker logs api', interleaved: 'api ready\napi terror count\napi WARN slow\napi fatal: down\n', stdout: '', stderr: '', exitCode: 1, truncated: false });
   assert.match(output.stdout, /errors=1 warnings=1/);
-  assert.match(output.stdout, /api WARN slow[\s\S]*api fatal: down/);
+  assert.match(output.stdout, /api fatal: down[\s\S]*api WARN slow/);
+});
+
+test('logs parser groups repeated multiline events across services', () => {
+  const interleaved = [
+    '\u001b[31m2026-07-10T12:00:00Z api-1 | Error: database unavailable\u001b[0m',
+    '    at connect (db.js:10:2)',
+    '2026-07-10T12:00:01Z api-2 | Error: database unavailable',
+    '    at connect (db.js:10:2)',
+    '2026-07-10T12:00:02Z worker | WARN retrying',
+  ].join('\r\n');
+  const output = parseLogs({ command: 'docker compose logs', interleaved, stdout: '', stderr: '', exitCode: 4, truncated: false });
+  assert.equal(output.exitCode, 4);
+  assert.match(output.stdout, /raw_lines=5/);
+  assert.match(output.stdout, /services=api-1,api-2,worker errors=2 warnings=1/);
+  assert.match(output.stdout, /ERROR count=2 services=api-1,api-2/);
+  assert.equal((output.stdout.match(/at connect/gu) || []).length, 1);
+  assert.doesNotMatch(output.stdout, /\u001b/);
+  assert.match(output.stdout, /accounted_lines=5/);
 });
 
 test('http parser reports emitted headers and never infers a missing status', () => {
@@ -127,7 +145,7 @@ test('family parsers cover empty, noise, truncation, and failure evidence', () =
   assert.match(parseLogs(base).stdout, /no_log_output/);
   assert.match(parseHttp(base).stdout, /http_status=\?[\s\S]*no_http_output/);
   assert.match(parseGeneric(base).stdout, /no_command_output/);
-  assert.match(parseLogs({ ...base, interleaved: '10%\nservice ready\n', truncated: true }).stdout, /LOG service ready[\s\S]*truncated=true/);
+  assert.match(parseLogs({ ...base, interleaved: '10%\nservice ready\n', truncated: true }).stdout, /LOG count=1 services=-[\s\S]*service ready[\s\S]*truncated=true/);
   assert.match(parseHttp({ ...base, stderr: 'curl: (7) Failed to connect\n', exitCode: 7, truncated: true }).stdout, /curl: \(7\)[\s\S]*truncated=true/);
   assert.match(parseGeneric({ ...base, interleaved: 'same\nsame\nError: bad\n', exitCode: 4 }).stdout, /TAIL Error: bad/);
   assert.match(parseTest({ ...base, stdout: '', exitCode: 1 }).stdout, /parser=generic/);
