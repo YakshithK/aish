@@ -1,0 +1,6 @@
+2026-07-10T12:00:00Z api-1 | server ready on :3000
+2026-07-10T12:00:01Z api-2 | server ready on :3000
+2026-07-10T12:00:02Z api-1 | server ready on :3000
+2026-07-10T12:00:03Z worker-1 | processed batch
+2026-07-10T12:00:04Z worker-1 | processed batch
+2026-07-10T12:00:05Z api-1 | request complete

@@ -10,6 +10,7 @@ const TIMESTAMP = /^(?:\[)?((?:\d{4}-\d{2}-\d{2}[T ][0-9:.+-]+Z?)|(?:\d{2}:\d{2}
 const SERVICE_PIPE = /^([\p{L}\p{N}_.\/-]+)\s+\|\s?/u;
 const SERVICE_BRACKET = /^\[([\p{L}\p{N}_.\/-]+)\]\s*/u;
 const ERROR_MARKER = /(^|\W)(error|fatal|panic|exception)(\W|$)/iu;
+const ERROR_CLASS = /\b[A-Z][A-Za-z0-9_]*(?:Error|Exception)\b/u;
 const WARNING_MARKER = /(^|\W)warn(?:ing)?(\W|$)/iu;
 const PROGRESS_NOISE = /^(?:[.=#* -]+|\[\d+\/\d+\]|\d+(?:\.\d+)?%)(?:\s*)$/u;
 const CONTINUATION = /^(?:\s+|at\s+|Caused by:|Traceback \(most recent call last\):|File "|During handling of the above exception|The above exception was the direct cause)/u;
@@ -142,7 +143,7 @@ function extractMetadata(line) {
 
 function classify(event) {
   const message = event.messageLines.join('\n');
-  if (ERROR_MARKER.test(message)) return 'error';
+  if (ERROR_MARKER.test(message) || ERROR_CLASS.test(message)) return 'error';
   if (WARNING_MARKER.test(message)) return 'warning';
   return 'routine';
 }

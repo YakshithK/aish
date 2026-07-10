@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { commands, dispatch, main } from '../src/cli.js';
 import { classifyCommand, normalizeExecutable } from '../src/command-router.js';
 import { observeCommand } from '../src/command-observer.js';
@@ -8,6 +9,7 @@ import { parse as parseGeneric } from '../src/parsers/generic.js';
 import { parse as parseHttp } from '../src/parsers/http.js';
 import { parse as parseLogs } from '../src/parsers/logs.js';
 import { parse as parseTest } from '../src/parsers/test.js';
+import { LOG_GROUP_MAX, sanitizeLogText, segmentLogEvents } from '../src/parsers/logs.js';
 import { run as runTestCommand } from '../src/commands/test.js';
 import { run as runBuildCommand } from '../src/commands/build.js';
 
@@ -158,4 +160,69 @@ test('classifier includes each executable named in the initial registry', () => 
     assert.equal(classifyCommand([manager, 'test']), 'test');
     for (const subcommand of ['install', 'build', 'ci']) assert.equal(classifyCommand([manager, subcommand]), 'build');
   }
+});
+
+const logFixture = name => readFileSync(new URL(`fixtures/${name}`, import.meta.url), 'utf8');
+const logInput = (interleaved, overrides = {}) => ({ command: 'docker compose logs', interleaved, stdout: '', stderr: '', exitCode: 0, truncated: false, ...overrides });
+const metric = (stdout, name) => Number(stdout.match(new RegExp(`(?:^| )${name}=(\\d+)`, 'm'))?.[1]);
+
+test('logs sanitization normalizes terminal controls and preserves printable Unicode', () => {
+  const sanitized = sanitizeLogText('\u001b[31mERROR café 🚀\u001b[0m\rnext\u0000line\r\n');
+  assert.equal(sanitized, 'ERROR café 🚀\nnextline\n');
+});
+
+test('logs event segmentation covers timestamps, prefixes, traces, and progress noise', () => {
+  const cases = [
+    ['2026-07-10T12:00:00Z api | ready\n', 1],
+    ['12:00:00.123 [pod/container] ready\n', 1],
+    ['plain event\n    at call (x.js:1:1)\n', 1],
+    ['Traceback (most recent call last):\n  File "x.py", line 1\nValueError: bad\n', 1],
+    ['10%\n\nready\n', 1],
+  ];
+  for (const [source, expected] of cases) assert.equal(segmentLogEvents(source).events.length, expected, source);
+});
+
+test('logs severity uses event boundaries and counts repetitions, not matching lines', () => {
+  const source = 'terror metrics\nWARN first warning\nError: first error\nCaused by: Error: nested marker\nError: first error\nCaused by: Error: nested marker\n';
+  const output = parseLogs(logInput(source, { exitCode: 3 }));
+  assert.match(output.stdout, /errors=2 warnings=1/);
+  assert.match(output.stdout, /ERROR count=2/);
+  assert.doesNotMatch(output.stdout, /errors=3/);
+});
+
+test('compose fixture has exact deterministic grouping and accounting', () => {
+  const input = logInput(logFixture('logs-compose-repetition.txt'));
+  const first = parseLogs(input);
+  const second = parseLogs(input);
+  assert.deepEqual(first, second);
+  assert.equal(first.stdout, 'status=passed exit=0 family=logs command="docker compose logs"\nraw_lines=6 compact_lines=12 services=api-1,api-2,worker-1 errors=0 warnings=0\nLOG count=3 services=api-1,api-2\n  2026-07-10T12:00:00Z api-1 | server ready on :3000\nLOG count=2 services=worker-1\n  2026-07-10T12:00:03Z worker-1 | processed batch\nLOG count=1 services=api-1\n  2026-07-10T12:00:05Z api-1 | request complete\naccounted_lines=6 emitted_lines=3 collapsed_lines=3 routine_omitted_lines=0 severity_omitted_lines=0 noise_lines=0 blank_lines=0 truncation_lines=0\noverflow_groups=0 overflow_events=0 overflow_lines=0 overflow_errors=0 overflow_warnings=0\nomitted=collapsed_repetitions,routine,noise,blank,overflow,full_output\ntruncated=false\n');
+  assert.equal(metric(first.stdout, 'raw_lines'), metric(first.stdout, 'accounted_lines'));
+});
+
+test('mixed-service fixture keeps complete JS, Java, and Python events in severity order', () => {
+  const output = parseLogs(logInput(logFixture('logs-mixed-multiline.txt'), { exitCode: 8 }));
+  assert.equal(output.exitCode, 8);
+  assert.match(output.stdout, /errors=3 warnings=1/);
+  assert.match(output.stdout, /Error: request failed[\s\S]*at processRequest/);
+  assert.match(output.stdout, /IllegalStateException[\s\S]*Caused by:[\s\S]*Queue\.read/);
+  assert.match(output.stdout, /Traceback[\s\S]*ValueError: invalid job/);
+  assert.match(output.stdout, /ValueError: invalid job[\s\S]*WARN retry scheduled/);
+  assert.equal(metric(output.stdout, 'raw_lines'), metric(output.stdout, 'accounted_lines'));
+});
+
+test('logs group cap exposes severity overflow and accounts for every line', () => {
+  const source = Array.from({ length: LOG_GROUP_MAX + 4 }, (_, index) => `Error: unique-${index}`).join('\n');
+  const output = parseLogs(logInput(source, { truncated: true }));
+  assert.match(output.stdout, new RegExp(`errors=${LOG_GROUP_MAX + 4}`));
+  assert.match(output.stdout, /overflow_groups=4 overflow_events=4 overflow_lines=4 overflow_errors=4/);
+  assert.equal(metric(output.stdout, 'raw_lines'), metric(output.stdout, 'accounted_lines'));
+  assert.ok(Buffer.byteLength(output.stdout) < 16000);
+});
+
+test('high-volume fixture selects a bounded recent tail without splitting events', () => {
+  const output = parseLogs(logInput(logFixture('logs-high-volume-unique.txt'), { truncated: true }));
+  assert.equal((output.stdout.match(/^LOG count=/gmu) || []).length, 12);
+  assert.match(output.stdout, /event unique-20/);
+  assert.doesNotMatch(output.stdout, /event unique-01/);
+  assert.equal(metric(output.stdout, 'raw_lines'), metric(output.stdout, 'accounted_lines'));
 });
