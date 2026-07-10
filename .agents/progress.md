@@ -1,9 +1,9 @@
 # AgentShell Progress Map
 
-Updated: Thursday, July 9, 2026 after the Node/npm parity rewrite
+Updated: Friday, July 10, 2026 after init-owned global routing
 Workspace: `/home/yakshith/aish`
 Branch: `main`
-Git state at capture: clean and synchronized with `origin/main`
+Git state at capture: branch ahead of `origin/main` with routing-flow commits
 
 ## Current E2E State
 
@@ -15,6 +15,11 @@ compatibility path for one release.
 Node v0 parity, package verification, install smoke, and deterministic benchmark
 proof are implemented. A post-rewrite parity audit restored exact CLI behavior,
 bounded streaming, static rules, benchmark fixtures, and missing regression tests.
+
+`aish init` is now the single adoption command. It writes repo-local routing and
+checks global Claude/Codex/Cursor/OpenCode routing. If global routing is missing,
+interactive users are asked whether to install it; non-interactive users can run
+`aish init --yes`. There is no standalone `aish install-agent` command anymore.
 
 The project has moved from engineering mode to evidence mode. The next goal is
 not another wrapper. The next goal is to prove that a new user can install it,
@@ -32,16 +37,16 @@ aish diff
 aish inspect
 aish init
 aish doctor
-aish install-agent
 aish skill
 aish test -- <command>
 aish build -- <command>
+aish benchmark
 ```
 
 This includes the original v0 plus:
 
 - repo-local agent rules;
-- global host installs for supported agents;
+- global host installs for supported agents through `aish init --yes`;
 - compact diff summaries;
 - multi-runner test failure summaries;
 - compact build/install log summaries;
@@ -52,13 +57,19 @@ This includes the original v0 plus:
 Latest verified test run from this checkout:
 
 ```bash
-UV_CACHE_DIR=/home/yakshith/aish/.uv-cache uv run pytest
+uv run --extra dev pytest
+npm test
+uv build
+npm --cache /tmp/aish-npm-cache pack --dry-run
 ```
 
 Result:
 
 ```text
-46 passed in 7.26s
+Python: 52 passed in 10.00s
+Node: 9 passed in 5.81s
+Python build: succeeded
+npm pack dry run: succeeded with 27 files
 ```
 
 CLI smoke also passed and exposes all command groups listed above.
@@ -66,13 +77,14 @@ CLI smoke also passed and exposes all command groups listed above.
 Latest shipped commits at capture:
 
 ```text
+fc48f48 refactor: rename global routing internals
+1ae54f1 feat(node): fold agent routing into init
+e43d50a feat(init): offer global agent routing
+7ef6d7f feat: add deterministic benchmark command
 db98a86 change github url from agentshell to aish
 c018c6e feat: add compact build log summaries
 1842d7d feat: recognize common test runner failures
 e55c5c7 feat: add compact git diff summaries
-2d23be9 feat: add agent inspection workflow
-188cdfd feat: add global agent skill installs
-ac54863 docs: sharpen agent workflow install
 ```
 
 ## Research State
@@ -120,8 +132,10 @@ search raw_lines=7 raw_chars=212 compact_lines=5 compact_chars=146 shrink=31.1% 
 Verification after implementation:
 
 ```text
-50 passed in 7.14s
+Python: 52 passed in 10.00s
+Node: 9 passed in 5.81s
 uv build succeeded
+npm pack dry run succeeded
 ```
 
 ## What Is Not Proven Yet

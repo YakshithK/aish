@@ -11,7 +11,6 @@ aish init
 aish doctor
 aish doctor --agents
 aish inspect
-aish install-agent claude
 aish skill print generic
 aish tree
 aish view README.md
@@ -42,14 +41,19 @@ npx @yakshithk/agentshell --help
 npx @yakshithk/agentshell inspect
 ```
 
-Then install repo-local agent rules:
+Then run init from a repo:
 
 ```bash
+cd your-repo
 aish init
-aish doctor
+aish doctor --agents
 ```
 
-This writes instructions for coding agents so they prefer:
+This writes repo-local instructions and checks whether global agent routing is
+installed. If global routing is missing, interactive shells ask whether to add
+it. In non-interactive shells, use `aish init --yes`.
+
+The installed rules make coding agents prefer:
 
 - `aish tree` over `tree`, `find .`, or `ls -R`
 - `aish view` over `cat`
@@ -78,18 +82,19 @@ npm install -g .
 The previous Python package remains available as a compatibility path for one
 release while npm is the primary distribution.
 
-Then install agent instructions in the repo:
+Then initialize a repo:
 
 ```bash
+cd your-repo
 aish init
-aish doctor
+aish doctor --agents
 ```
 
 ## Commands
 
 ### `aish init`
 
-Writes repo-local instruction files so agents naturally prefer AgentShell:
+Writes repo-local instruction files and handles first-run global agent routing:
 
 ```text
 agent_rules=installed created=3 updated=0 skipped=0
@@ -97,6 +102,9 @@ create AGENTS.md
 create CLAUDE.md
 create .cursor/rules/agentshell.mdc
 suggestion=run "aish doctor"
+global_agent_routing=missing
+missing_global_hosts=claude,codex,cursor,opencode
+suggestion=run "aish init --yes" to install global agent routing
 ```
 
 Files created:
@@ -105,7 +113,26 @@ Files created:
 - `CLAUDE.md`
 - `.cursor/rules/agentshell.mdc`
 
-Existing files are skipped by default. Use `aish init --force` to refresh them.
+Existing repo files are skipped by default. Use `aish init --force` to refresh
+them.
+
+Global routing is installed once per machine/agent host:
+
+```text
+~/.claude/skills/agentshell/SKILL.md
+~/.codex/skills/agentshell/SKILL.md
+~/.cursor/rules/agentshell.mdc
+~/.config/opencode/skills/agentshell/SKILL.md
+```
+
+Useful init modes:
+
+```bash
+aish init              # repo rules; ask about global routing in an interactive shell
+aish init --yes        # repo rules plus missing global routing
+aish init --no-global  # repo rules only
+aish init --force      # refresh existing repo rules
+```
 
 Generated instructions include a routing table:
 
@@ -141,30 +168,8 @@ global_claude_skill=missing path=/home/me/.claude/skills/agentshell/SKILL.md
 global_codex_skill=missing path=/home/me/.codex/skills/agentshell/SKILL.md
 global_cursor_skill=missing path=/home/me/.cursor/rules/agentshell.mdc
 global_opencode_skill=missing path=/home/me/.config/opencode/skills/agentshell/SKILL.md
-agent_suggestion=aish install-agent claude
+agent_suggestion=aish init --yes
 ```
-
-### `aish install-agent`
-
-Installs global AgentShell skills/rules for agent hosts:
-
-```bash
-aish install-agent claude
-aish install-agent codex
-aish install-agent cursor
-aish install-agent opencode
-aish install-agent all
-```
-
-Example output:
-
-```text
-agent_install=installed host=claude created=1 updated=0 skipped=0
-create host=claude path=/home/me/.claude/skills/agentshell/SKILL.md
-suggestion=run "aish doctor --agents"
-```
-
-Existing global files are skipped by default. Use `--force` to refresh them.
 
 ### `aish skill print`
 
