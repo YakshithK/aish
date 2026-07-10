@@ -32,7 +32,14 @@ The principle is progressive disclosure: summary first, exact details only when 
 Install the CLI:
 
 ```bash
-pipx install git+https://github.com/YakshithK/aish.git
+npm install -g agentshell
+```
+
+Or try it without installing globally:
+
+```bash
+npx agentshell --help
+npx agentshell inspect
 ```
 
 Then install repo-local agent rules:
@@ -56,17 +63,20 @@ Principle: summary first, details only when needed.
 
 ## Install
 
+From npm (Node.js 20+):
+
+```bash
+npm install -g agentshell
+```
+
 From a checkout:
 
 ```bash
-python -m pip install -e .
+npm install -g .
 ```
 
-From GitHub:
-
-```bash
-pipx install git+https://github.com/YakshithK/aish.git
-```
+The previous Python package remains available as a compatibility path for one
+release while npm is the primary distribution.
 
 Then install agent instructions in the repo:
 
