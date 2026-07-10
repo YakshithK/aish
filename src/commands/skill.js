@@ -1,0 +1,1 @@
+import{CURSOR_INSTRUCTIONS,SKILL_INSTRUCTIONS}from'../agent-rules.js';import{AishError,EXIT_USAGE,result}from'../output.js';export function printSkill(host){if(['claude','codex','opencode','generic'].includes(host))return result(SKILL_INSTRUCTIONS);if(host==='cursor')return result(CURSOR_INSTRUCTIONS);throw new AishError(`error=unknown_host host=${host}`,EXIT_USAGE);}

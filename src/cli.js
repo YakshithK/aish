@@ -17,6 +17,10 @@ export async function dispatch(argv) {
   if (command === 'status') return (await import('./commands/status.js')).run(argv[1] ?? '.');
   if (command === 'diff') { const staged=argv.includes('--staged'), rest=argv.slice(1).filter(x=>x!=='--staged'); return (await import('./commands/diff.js')).run('.',rest[0]??null,staged); }
   if (command === 'inspect') return (await import('./commands/inspect.js')).run(argv[1] ?? '.');
+  if (command === 'init') { const force=argv.includes('--force'),p=argv.slice(1).find(x=>!x.startsWith('--'))??'.'; return (await import('./commands/init.js')).run(p,force); }
+  if (command === 'doctor') { const agents=argv.includes('--agents'),p=argv.slice(1).find(x=>!x.startsWith('--'))??'.'; return (await import('./commands/doctor.js')).run(p,agents); }
+  if (command === 'install-agent') { if(!argv[1])throw new AishError('error=missing_argument name=host',EXIT_USAGE);return (await import('./commands/install-agent.js')).run(argv[1],argv.includes('--force')); }
+  if (command === 'skill') { if(argv[1]!=='print'||!argv[2])throw new AishError('error=usage expected="skill print <host>"',EXIT_USAGE);return (await import('./commands/skill.js')).printSkill(argv[2]); }
   throw new AishError(`error=not_implemented command=${command}`, EXIT_RUNTIME);
 }
 
