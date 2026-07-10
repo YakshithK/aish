@@ -21,6 +21,9 @@ aish diff
 aish diff src/auth.py
 aish test -- python -m pytest
 aish build -- npm install
+aish docker compose logs api
+aish curl http://localhost:3000/users
+aish run --timeout 10 -- tree
 aish benchmark
 ```
 
@@ -66,6 +69,7 @@ The installed rules make coding agents prefer:
 - `aish diff` over raw patch dumps
 - `aish test -- <command>` over raw test logs
 - `aish build -- <command>` over raw build or install logs
+- `aish <executable> [args...]` for any other non-interactive command
 
 Principle: summary first, details only when needed.
 
@@ -167,6 +171,7 @@ Generated instructions include a routing table:
 | inspect changes | `aish diff` or `aish diff <file>` | raw `git diff`, `git show --patch` |
 | tests | `aish test -- <command>` | raw noisy test logs |
 | builds/install | `aish build -- <command>` | raw compiler, package install, or build logs |
+| other commands | `aish <executable> [args...]` | raw unbounded terminal output |
 ```
 
 ### `aish doctor`
@@ -295,6 +300,39 @@ file=src/auth.py added=22 removed=7
 omitted=context_lines,unchanged_hunks
 ```
 
+### Arbitrary commands and `aish run`
+
+Any first token that is not a native AgentShell command is executed as an
+external command and summarized with a test, build, logs, HTTP, or generic
+parser:
+
+```bash
+aish npm install
+aish cargo test
+aish docker compose logs api
+aish curl http://localhost:3000/users
+```
+
+Native AgentShell names always win. Use the explicit escape hatch when an
+external executable has the same name:
+
+```bash
+aish tree                         # AgentShell's native tree command
+aish run -- tree                  # external executable named tree
+aish run --timeout 10 -- command  # timeout must be between 0.1 and 3600 seconds
+```
+
+`--` is required by `aish run`. Tokens after it are passed as the exact child
+argument list: AgentShell adds no shell parsing, interpolation, globbing,
+redirects, or pipes. Arbitrary commands are non-interactive, receive EOF on
+stdin, default to a 30-second timeout, and preserve their exit code. A typo such
+as `aish tre` is therefore attempted as an external command and normally exits
+127 with `command_not_found`.
+
+For curl, AgentShell never injects flags. It reports an HTTP status and headers
+only when curl itself emitted them; otherwise the summary says
+`http_status=?` while retaining bounded body or error evidence.
+
 ### `aish test -- <command>`
 
 Runs the command after `--`, preserves the child exit code, and summarizes failures.
@@ -369,4 +407,8 @@ If you use Claude Code, Codex, Cursor, Aider, or Windsurf: what terminal command
 
 ## Safety
 
-`aish view`, `aish tree`, and `aish search` read local files under the requested path. `aish test -- <command>` executes the exact command list after `--` without `shell=True`. AgentShell does not collect telemetry.
+`aish view`, `aish tree`, and `aish search` read local files under the requested
+path. Observed commands execute exact argument arrays with shell processing
+disabled and stdin ignored. Captured stdout, stderr, and interleaved evidence
+are independently bounded; timed-out process trees are terminated. AgentShell
+does not collect telemetry.
