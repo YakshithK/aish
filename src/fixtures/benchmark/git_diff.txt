@@ -1,0 +1,8 @@
+diff --git a/src/auth.py b/src/auth.py
+@@ -22,9 +22,13 @@
+-    return {"status": 200}
++    if not password:
++        return {"status": 400}
++def delete_user():
++    if is_admin:
++        return True

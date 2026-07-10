@@ -22,6 +22,7 @@ export async function dispatch(argv) {
   if (command === 'install-agent') { if(!argv[1])throw new AishError('error=missing_argument name=host',EXIT_USAGE);return (await import('./commands/install-agent.js')).run(argv[1],argv.includes('--force')); }
   if (command === 'skill') { if(argv[1]!=='print'||!argv[2])throw new AishError('error=usage expected="skill print <host>"',EXIT_USAGE);return (await import('./commands/skill.js')).printSkill(argv[2]); }
   if (command === 'test' || command === 'build') { const separator=argv.indexOf('--'),cmd=separator>=0?argv.slice(separator+1):argv.slice(1); return (await import(`./commands/${command}.js`)).run(cmd); }
+  if (command === 'benchmark') return (await import('./commands/benchmark.js')).run();
   throw new AishError(`error=not_implemented command=${command}`, EXIT_RUNTIME);
 }
 

@@ -1,0 +1,6 @@
+command: npm install
+warning: deprecated left-pad@1.3.0
+npm ERR! code ERESOLVE
+npm ERR! ERESOLVE unable to resolve dependency tree
+failed package @demo/app
+exit code: 2
