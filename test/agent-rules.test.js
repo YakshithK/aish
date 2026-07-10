@@ -58,6 +58,8 @@ test('templates retain the complete Python routing guidance', () => {
     assert.match(AGENT_INSTRUCTIONS, new RegExp(line.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
   assert.match(CURSOR_INSTRUCTIONS, /alwaysApply: true/);
+  assert.match(CURSOR_INSTRUCTIONS, /run `aish inspect` before raw shell exploration/);
+  assert.match(CURSOR_INSTRUCTIONS, /Do not treat it as optional/);
   assert.match(SKILL_INSTRUCTIONS, /Avoid raw commands that dump large human-oriented output/);
 });
 

@@ -148,3 +148,5 @@ def test_skill_print_returns_host_content() -> None:
     assert "name: agentshell" in generic.stdout
     assert "Use this skill when inspecting" in generic.stdout
     assert "alwaysApply: true" in cursor.stdout
+    assert "run `aish inspect` before raw shell exploration" in cursor.stdout
+    assert "Do not treat it as optional" in cursor.stdout

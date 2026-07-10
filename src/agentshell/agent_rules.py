@@ -44,11 +44,30 @@ alwaysApply: true
 
 # AgentShell
 
-For repository inspection, prefer AgentShell commands before raw shell commands.
+This is an always-on Cursor rule for this workspace. Do not treat it as optional
+style guidance.
+
+## First Move
+
+When the user asks Cursor to inspect, understand, debug, modify, or review this
+repository, run `aish inspect` before raw shell exploration when `aish` is
+available. If `aish inspect` is unavailable, start with the closest compact
+AgentShell command: `aish tree`, `aish status`, or `aish search "<query>"`.
+
+## Routing
+
+Prefer AgentShell commands before raw shell commands. Before using raw `cat`,
+`tree`, `find .`, `ls -R`, `grep -R`, raw `git diff`, raw test logs, or raw
+build/install logs, try the matching `aish` command first.
 
 {ROUTING_TABLE}
 
-Principle: summary first, details only when needed.
+Principle: summary first, exact details only when needed.
+
+Preserve exact paths, line numbers, commands, exit codes, and error names from
+`aish` output. If an `aish` command omits detail, ask for a narrower range such
+as `aish view <file>:<start>-<end>` or `aish diff <file>` instead of dumping raw
+output.
 """
 
 
