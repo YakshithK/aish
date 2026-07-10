@@ -1,0 +1,14 @@
+{
+  "name": "agentshell",
+  "version": "0.1.0",
+  "description": "Compact terminal observations for AI coding agents.",
+  "type": "module",
+  "bin": { "aish": "./bin/aish.js", "agentshell": "./bin/aish.js" },
+  "files": ["bin/", "src/*.js", "src/commands/", "src/fixtures/", "README.md", "LICENSE"],
+  "engines": { "node": ">=20" },
+  "scripts": { "test": "node --test", "check": "node --test", "pack:check": "npm pack --dry-run" },
+  "license": "MIT",
+  "keywords": ["ai", "agents", "cli", "terminal", "developer-tools"],
+  "repository": { "type": "git", "url": "git+https://github.com/YakshithK/aish.git" },
+  "publishConfig": { "access": "public", "provenance": true }
+}
