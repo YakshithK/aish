@@ -1,6 +1,6 @@
 # npm Install Proof
 
-Verified July 10, 2026 from the packed `@yakshithk/agentshell@0.1.0` tarball in a disposable
+Verified July 10, 2026 from the packed `@yakshith/agentshell@0.1.0` tarball in a disposable
 prefix and repository:
 
 ```text

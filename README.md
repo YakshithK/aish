@@ -31,14 +31,14 @@ The principle is progressive disclosure: summary first, exact details only when 
 Install the CLI:
 
 ```bash
-npm install -g @yakshithk/agentshell
+npm install -g @yakshith/agentshell
 ```
 
 Or try it without installing globally:
 
 ```bash
-npx @yakshithk/agentshell --help
-npx @yakshithk/agentshell inspect
+npx @yakshith/agentshell --help
+npx @yakshith/agentshell inspect
 ```
 
 Then run init from a repo:
@@ -70,7 +70,7 @@ Principle: summary first, details only when needed.
 From npm (Node.js 20+):
 
 ```bash
-npm install -g @yakshithk/agentshell
+npm install -g @yakshith/agentshell
 ```
 
 From a checkout:
