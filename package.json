@@ -11,6 +11,7 @@
     "bin/",
     "src/*.js",
     "src/commands/",
+    "src/parsers/",
     "src/fixtures/",
     "README.md",
     "LICENSE"

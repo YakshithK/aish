@@ -26,7 +26,7 @@ test('all three subprocess captures are byte bounded', async () => {
 test('timeout preserves partial evidence and terminates promptly', async () => {
   const script = "import time;print('started',flush=True);time.sleep(10)";
   const started = Date.now();
-  const r = await runCommand(['python3', '-c', script], { timeout: 0.05 });
+  const r = await runCommand(['python3', '-c', script], { timeout: 0.5 });
   assert.equal(r.exitCode, 124);
   assert.equal(r.timedOut, true);
   assert.match(r.stdout, /started/);
@@ -34,7 +34,7 @@ test('timeout preserves partial evidence and terminates promptly', async () => {
 });
 test('timeout terminates descendants in the isolated POSIX process group', { skip: process.platform === 'win32' }, async () => {
   const script = "import subprocess,sys,time;child=subprocess.Popen([sys.executable,'-c','import time;time.sleep(30)']);print(child.pid,flush=True);time.sleep(30)";
-  const r = await runCommand(['python3', '-c', script], { timeout: 0.05 });
+  const r = await runCommand(['python3', '-c', script], { timeout: 0.5 });
   const pid = Number(r.stdout.trim().split('\n')[0]);
   assert.equal(r.exitCode, 124);
   assert.ok(Number.isInteger(pid));

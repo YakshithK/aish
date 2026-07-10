@@ -29,5 +29,3 @@ export function classifyCommand(argv) {
   if (executable === 'curl') return 'http';
   return 'generic';
 }
-
-export const parserFamilies = Object.freeze(['test', 'build', 'logs', 'http', 'generic']);

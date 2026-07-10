@@ -2,7 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { commands, dispatch, main } from '../src/cli.js';
 import { classifyCommand, normalizeExecutable } from '../src/command-router.js';
-import { observeCommand, parseBuild, parseGeneric, parseHttp, parseLogs, parseTest } from '../src/command-observer.js';
+import { observeCommand } from '../src/command-observer.js';
+import { parse as parseBuild } from '../src/parsers/build.js';
+import { parse as parseGeneric } from '../src/parsers/generic.js';
+import { parse as parseHttp } from '../src/parsers/http.js';
+import { parse as parseLogs } from '../src/parsers/logs.js';
+import { parse as parseTest } from '../src/parsers/test.js';
 import { run as runTestCommand } from '../src/commands/test.js';
 import { run as runBuildCommand } from '../src/commands/build.js';
 
