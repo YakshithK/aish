@@ -32,14 +32,14 @@ The principle is progressive disclosure: summary first, exact details only when 
 Install the CLI:
 
 ```bash
-npm install -g agentshell
+npm install -g @yakshithk/agentshell
 ```
 
 Or try it without installing globally:
 
 ```bash
-npx agentshell --help
-npx agentshell inspect
+npx @yakshithk/agentshell --help
+npx @yakshithk/agentshell inspect
 ```
 
 Then install repo-local agent rules:
@@ -66,7 +66,7 @@ Principle: summary first, details only when needed.
 From npm (Node.js 20+):
 
 ```bash
-npm install -g agentshell
+npm install -g @yakshithk/agentshell
 ```
 
 From a checkout:

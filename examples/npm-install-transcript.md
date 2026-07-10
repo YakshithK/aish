@@ -1,16 +1,16 @@
 # npm Install Proof
 
-Verified July 9, 2026 from the packed `agentshell@0.1.0` tarball in a disposable
+Verified July 10, 2026 from the packed `@yakshithk/agentshell@0.1.0` tarball in a disposable
 prefix and repository:
 
 ```text
 $ npm pack --pack-destination /tmp
-agentshell-0.1.0.tgz
+yakshithk-agentshell-0.1.0.tgz
 package size: 17.5 kB
-unpacked size: 51.8 kB
+unpacked size: 51.9 kB
 total files: 27
 
-$ npm install --prefix /tmp/aish-node-smoke /tmp/agentshell-0.1.0.tgz
+$ npm install --prefix /tmp/aish-node-smoke /tmp/yakshithk-agentshell-0.1.0.tgz
 added 1 package
 
 $ /tmp/aish-node-smoke/node_modules/.bin/aish inspect /tmp/aish-node-repo

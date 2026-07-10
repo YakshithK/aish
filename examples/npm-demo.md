@@ -4,7 +4,7 @@
 AI coding agents use terminals designed for humans.
 AgentShell gives them compact, evidence-preserving observations.
 
-npm install -g agentshell
+npm install -g @yakshithk/agentshell
 aish init
 aish inspect
 aish tree

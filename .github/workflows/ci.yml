@@ -29,7 +29,7 @@ jobs:
         with:
           node-version: 20
       - run: npm pack
-      - run: npm install --global ./agentshell-*.tgz
+      - run: npm install --global ./yakshithk-agentshell-*.tgz
       - run: |
           repo=$(mktemp -d)
           git -C "$repo" init
