@@ -1,5 +1,5 @@
 {
-  "name": "agentshell",
+  "name": "@yakshithk/agentshell",
   "version": "0.1.0",
   "description": "Compact terminal observations for AI coding agents.",
   "type": "module",
