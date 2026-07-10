@@ -6,14 +6,13 @@ Captured July 9, 2026 from the packed npm artifact:
 AgentShell benchmark
 cases=5 evidence=preserved
 
-git_diff raw_lines=8 raw_chars=199 compact_lines=5 compact_chars=130 shrink=34.7% evidence=preserved
-pytest_failure raw_lines=3 raw_chars=147 compact_lines=2 compact_chars=170 shrink=0.0% evidence=preserved
-build_log raw_lines=6 raw_chars=169 compact_lines=4 compact_chars=154 shrink=8.9% evidence=preserved
-tree raw_lines=5 raw_chars=77 compact_lines=2 compact_chars=116 shrink=0.0% evidence=preserved
-search raw_lines=4 raw_chars=88 compact_lines=4 compact_chars=136 shrink=0.0% evidence=preserved
+git_diff raw_lines=42 raw_chars=1258 compact_lines=10 compact_chars=287 shrink=77.2% evidence=preserved
+pytest_failure raw_lines=22 raw_chars=871 compact_lines=4 compact_chars=234 shrink=73.1% evidence=preserved
+build_log raw_lines=19 raw_chars=683 compact_lines=7 compact_chars=269 shrink=60.6% evidence=preserved
+tree raw_lines=20 raw_chars=327 compact_lines=5 compact_chars=201 shrink=38.5% evidence=preserved
+search raw_lines=7 raw_chars=212 compact_lines=5 compact_chars=146 shrink=31.1% evidence=preserved
 ```
 
 Evidence checks fail closed: a case is marked missing if either its raw marker
-or compact counterpart is absent. These small rewrite fixtures validate parity;
-the larger Python launch fixtures remain the source of the published reduction
-claim until the Node fixture corpus is expanded.
+or compact counterpart is absent. The Node benchmark now uses the same complete
+fixtures, summaries, metrics, and evidence markers as the Python implementation.

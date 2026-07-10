@@ -19,3 +19,5 @@ test('missing command, subcommand help, and unknown options match usage semantic
   const io = { stdout: { write: (value) => { writes.out += value; } }, stderr: { write: (value) => { writes.err += value; } } };
   assert.equal(await main([], io), 2);
 });
+test('every command exposes subcommand help',async()=>{for(const command of commands)assert.match((await dispatch([command,'--help'])).stdout,new RegExp(`usage: aish ${command}`));});
+test('test and build require the argument separator',async()=>{for(const command of['test','build'])await assert.rejects(()=>dispatch([command,process.execPath]),error=>error.exitCode===2&&/expected/.test(error.message));});

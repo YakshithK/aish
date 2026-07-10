@@ -1,8 +1,42 @@
 diff --git a/src/auth.py b/src/auth.py
-@@ -22,9 +22,13 @@
+index 0e12abc..9f45def 100644
+--- a/src/auth.py
++++ b/src/auth.py
+@@ -22,9 +22,13 @@ def login(email, password):
+-    if email is None:
+-        return {"status": 400}
 -    return {"status": 200}
-+    if not password:
++    if email is None:
 +        return {"status": 400}
-+def delete_user():
-+    if is_admin:
++    if not password:
++        return {"status": 400, "error": "missing password"}
++    audit_login(email)
++    return {"status": 200, "user": email}
+ 
+ def logout(session):
+     session.clear()
+@@ -61,8 +65,13 @@ def can_delete_user(actor, user):
+-    return actor == user
++    if actor.is_admin:
 +        return True
++    return actor == user
+ 
+ def delete_user(actor, user):
++    if not can_delete_user(actor, user):
++        raise PermissionError("delete_user denied")
+     user.delete()
+diff --git a/tests/test_auth.py b/tests/test_auth.py
+index 41a0001..921cccc 100644
+--- a/tests/test_auth.py
++++ b/tests/test_auth.py
+@@ -8,6 +8,11 @@ def test_login_ok():
+     assert login("a@example.com", "pw")["status"] == 200
+ 
++def test_empty_password():
++    response = login("a@example.com", "")
++    assert response["status"] == 400
++    assert response["error"] == "missing password"
++
+ def test_logout():
+     session = {"user": "a@example.com"}
+     logout(session)

@@ -6,8 +6,8 @@ prefix and repository:
 ```text
 $ npm pack --pack-destination /tmp
 agentshell-0.1.0.tgz
-package size: 14.8 kB
-unpacked size: 41.7 kB
+package size: 17.5 kB
+unpacked size: 51.8 kB
 total files: 27
 
 $ npm install --prefix /tmp/aish-node-smoke /tmp/agentshell-0.1.0.tgz

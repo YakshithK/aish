@@ -13,7 +13,8 @@ distribution; the Python implementation remains as the parity oracle and
 compatibility path for one release.
 
 Node v0 parity, package verification, install smoke, and deterministic benchmark
-proof are implemented. The rewrite landed as eight reviewable commits.
+proof are implemented. A post-rewrite parity audit restored exact CLI behavior,
+bounded streaming, static rules, benchmark fixtures, and missing regression tests.
 
 The project has moved from engineering mode to evidence mode. The next goal is
 not another wrapper. The next goal is to prove that a new user can install it,

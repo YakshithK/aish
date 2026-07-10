@@ -1,4 +1,7 @@
-src/auth.py:12: login
-src/auth.py:31: login
-src/routes.py:44: login
-README.md:88: login
+query: login
+matches: 4
+src/auth.py:12:def login(email, password):
+src/auth.py:31:    audit_login(email)
+src/routes.py:44:router.post("/login", login_handler)
+README.md:88:Run login tests with pytest.
+omitted: 2
