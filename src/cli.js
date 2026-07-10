@@ -1,12 +1,12 @@
 import process from 'node:process';
 import { AishError, EXIT_RUNTIME, EXIT_USAGE, result } from './output.js';
 
-export const commands = ['tree', 'view', 'search', 'status', 'diff', 'inspect', 'init', 'doctor', 'install-agent', 'skill', 'test', 'build', 'benchmark'];
+export const commands = ['tree', 'view', 'search', 'status', 'diff', 'inspect', 'init', 'doctor', 'skill', 'test', 'build', 'benchmark'];
 const summaries = {
   tree: 'show compact project structure', view: 'safely view a file or line range', search: 'search compactly',
   status: 'show compact git status', diff: 'summarize git diffs without dumping full patches',
   inspect: 'summarize repo setup, git state, and project structure', init: 'install agent instructions for this repo',
-  doctor: 'check AgentShell setup', 'install-agent': 'install global AgentShell rules for an agent host',
+  doctor: 'check AgentShell setup',
   skill: 'print AgentShell skill/rule content', test: 'run and summarize a test command',
   build: 'run and summarize a build or install command', benchmark: 'measure raw vs compact fixture output',
 };
@@ -18,7 +18,7 @@ function help() {
 function commandHelp(command) {
   const usage = {
     tree: '[path]', view: 'target', search: 'query [path]', status: '[path]', diff: '[--staged] [target]', inspect: '[path]',
-    init: '[--force] [path]', doctor: '[--agents] [path]', 'install-agent': '[--force] {claude,codex,cursor,opencode,all}',
+    init: '[--force] [--yes] [--no-global] [path]', doctor: '[--agents] [path]',
     skill: 'print {claude,codex,cursor,opencode,generic}', test: '-- <command...>', build: '-- <command...>', benchmark: '',
   }[command];
   return `usage: aish ${command}${usage ? ` ${usage}` : ''}\n\n${summaries[command]}\n`;
@@ -56,15 +56,17 @@ export async function dispatch(argv) {
     return (await import('./commands/diff.js')).run('.', values[0] ?? null, args.includes('--staged'));
   }
   if (command === 'init' || command === 'doctor') {
-    const flag = command === 'init' ? '--force' : '--agents'; rejectUnknownOptions(args, [flag]);
+    const allowed = command === 'init' ? ['--force', '--yes', '--no-global'] : ['--agents'];
+    rejectUnknownOptions(args, allowed);
     const values = positional(args); atMost(values, 1);
-    return (await import(`./commands/${command}.js`)).run(values[0] ?? '.', args.includes(flag));
-  }
-  if (command === 'install-agent') {
-    rejectUnknownOptions(args, ['--force']); const values = positional(args); atMost(values, 1);
-    if (!values[0]) usage('missing=host');
-    if (!['claude','codex','cursor','opencode','all'].includes(values[0])) usage(`invalid_host=${values[0]}`);
-    return (await import('./commands/install-agent.js')).run(values[0], args.includes('--force'));
+    if (command === 'init') {
+      return (await import('./commands/init.js')).run(values[0] ?? '.', {
+        force: args.includes('--force'),
+        yes: args.includes('--yes'),
+        noGlobal: args.includes('--no-global'),
+      });
+    }
+    return (await import('./commands/doctor.js')).run(values[0] ?? '.', args.includes('--agents'));
   }
   if (command === 'skill') {
     rejectUnknownOptions(args); atMost(args, 2);
