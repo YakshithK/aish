@@ -5,7 +5,7 @@ from pathlib import Path
 import agentshell.commands.doctor as doctor_command
 from agentshell.commands.doctor import run as doctor
 from agentshell.commands.init import run as init
-from agentshell.commands.install_agent import run as install_agent
+from agentshell.global_routing import install_global
 from agentshell.commands.skill import print_skill
 from agentshell.subprocesses import RunResult
 
@@ -104,26 +104,26 @@ def test_doctor_reports_ready_after_init(tmp_path: Path, monkeypatch) -> None:
     assert "suggestion=ready" in result.stdout
 
 
-def test_install_agent_writes_global_skill_files(tmp_path: Path) -> None:
-    result = install_agent("all", home=tmp_path)
+def test_global_routing_writes_global_skill_files(tmp_path: Path) -> None:
+    result = install_global("all", home=tmp_path)
 
-    assert "agent_install=installed host=all created=4 updated=0 skipped=0" in result.stdout
+    assert "global_agent_routing=installed host=all created=4 updated=0 skipped=0" in result.stdout
     assert (tmp_path / ".claude" / "skills" / "agentshell" / "SKILL.md").exists()
     assert (tmp_path / ".codex" / "skills" / "agentshell" / "SKILL.md").exists()
     assert (tmp_path / ".cursor" / "rules" / "agentshell.mdc").exists()
     assert (tmp_path / ".config" / "opencode" / "skills" / "agentshell" / "SKILL.md").exists()
 
 
-def test_install_agent_skips_existing_without_force(tmp_path: Path) -> None:
-    first = install_agent("claude", home=tmp_path)
-    second = install_agent("claude", home=tmp_path)
+def test_global_routing_skips_existing_without_force(tmp_path: Path) -> None:
+    first = install_global("claude", home=tmp_path)
+    second = install_global("claude", home=tmp_path)
 
     assert "created=1 updated=0 skipped=0" in first.stdout
     assert "created=0 updated=0 skipped=1" in second.stdout
 
 
 def test_doctor_agents_reports_global_skill_state(tmp_path: Path, monkeypatch) -> None:
-    install_agent("claude", home=tmp_path)
+    install_global("claude", home=tmp_path)
     monkeypatch.setattr(doctor_command.shutil, "which", lambda name: "/usr/bin/rg")
     monkeypatch.setattr(
         doctor_command,

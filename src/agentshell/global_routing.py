@@ -11,29 +11,29 @@ HOSTS = ("claude", "codex", "cursor", "opencode")
 
 
 @dataclass(frozen=True)
-class AgentInstall:
+class GlobalInstall:
     host: str
     path: Path
     content: str
 
 
-def installs_for(host: str, home: Path | None = None) -> list[AgentInstall]:
+def installs_for(host: str, home: Path | None = None) -> list[GlobalInstall]:
     if host == "all":
-        installs: list[AgentInstall] = []
+        installs: list[GlobalInstall] = []
         for name in HOSTS:
             installs.extend(installs_for(name, home=home))
         return installs
 
     root = Path.home() if home is None else home
     if host == "claude":
-        return [AgentInstall(host, root / ".claude" / "skills" / "agentshell" / "SKILL.md", SKILL_INSTRUCTIONS)]
+        return [GlobalInstall(host, root / ".claude" / "skills" / "agentshell" / "SKILL.md", SKILL_INSTRUCTIONS)]
     if host == "codex":
-        return [AgentInstall(host, root / ".codex" / "skills" / "agentshell" / "SKILL.md", SKILL_INSTRUCTIONS)]
+        return [GlobalInstall(host, root / ".codex" / "skills" / "agentshell" / "SKILL.md", SKILL_INSTRUCTIONS)]
     if host == "cursor":
-        return [AgentInstall(host, root / ".cursor" / "rules" / "agentshell.mdc", CURSOR_INSTRUCTIONS)]
+        return [GlobalInstall(host, root / ".cursor" / "rules" / "agentshell.mdc", CURSOR_INSTRUCTIONS)]
     if host == "opencode":
         return [
-            AgentInstall(
+            GlobalInstall(
                 host,
                 root / ".config" / "opencode" / "skills" / "agentshell" / "SKILL.md",
                 SKILL_INSTRUCTIONS,
@@ -42,7 +42,7 @@ def installs_for(host: str, home: Path | None = None) -> list[AgentInstall]:
     raise AishError(f"error=unknown_host host={host}", EXIT_USAGE)
 
 
-def run(host: str, force: bool = False, home: Path | None = None) -> CommandResult:
+def install_global(host: str, force: bool = False, home: Path | None = None) -> CommandResult:
     installs = installs_for(host, home=home)
     created = 0
     updated = 0
@@ -65,10 +65,9 @@ def run(host: str, force: bool = False, home: Path | None = None) -> CommandResu
             created += 1
             lines.append(f"create host={install.host} path={install.path}")
 
-    summary = f"agent_install=installed host={host} created={created} updated={updated} skipped={skipped}"
+    summary = f"global_agent_routing=installed host={host} created={created} updated={updated} skipped={skipped}"
     if skipped:
-        lines.append(f"suggestion=run \"aish install-agent {host} --force\" to refresh existing files")
+        lines.append('suggestion=run "aish init --yes" to install missing global routing')
     else:
         lines.append('suggestion=run "aish doctor --agents"')
     return CommandResult(join_lines([summary, *lines]))
-

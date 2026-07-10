@@ -6,7 +6,7 @@ from pathlib import Path
 
 from agentshell.agent_rules import AGENT_INSTRUCTIONS, CURSOR_INSTRUCTIONS
 from agentshell.output import CommandResult, join_lines
-from agentshell.commands.install_agent import HOSTS, installs_for
+from agentshell.global_routing import HOSTS, installs_for
 
 
 @dataclass(frozen=True)

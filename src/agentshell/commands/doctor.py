@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 
 from agentshell import __version__
-from agentshell.commands.install_agent import HOSTS, installs_for
+from agentshell.global_routing import HOSTS, installs_for
 from agentshell.output import CommandResult, join_lines
 from agentshell.subprocesses import run_command
 
