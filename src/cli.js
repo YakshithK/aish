@@ -11,6 +11,9 @@ export async function dispatch(argv) {
   if (!argv.length || argv[0] === '--help' || argv[0] === '-h') return result(help());
   const [command] = argv;
   if (!commands.includes(command)) throw new AishError(`error=unknown_command command=${command}`, EXIT_USAGE);
+  if (command === 'tree') return (await import('./commands/tree.js')).run(argv[1] ?? '.');
+  if (command === 'view') { if (!argv[1]) throw new AishError('error=missing_argument name=target', EXIT_USAGE); return (await import('./commands/view.js')).run(argv[1]); }
+  if (command === 'search') { if (!argv[1]) throw new AishError('error=missing_argument name=query', EXIT_USAGE); return (await import('./commands/search.js')).run(argv[1], argv[2] ?? '.'); }
   throw new AishError(`error=not_implemented command=${command}`, EXIT_RUNTIME);
 }
 
