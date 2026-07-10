@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { commands, dispatch, main } from '../src/cli.js';
 import { classifyCommand, normalizeExecutable } from '../src/command-router.js';
 import { observeCommand, parseGeneric, parseHttp, parseLogs } from '../src/command-observer.js';
+import { run as runTestCommand } from '../src/commands/test.js';
+import { run as runBuildCommand } from '../src/commands/build.js';
 
 test('help lists every command', async () => {
   const output = await dispatch(['--help']);
@@ -67,4 +69,11 @@ test('http parser reports emitted headers and never infers a missing status', ()
   assert.match(output.stdout, /http_status=201/); assert.match(output.stdout, /Content-Type: application\/json/i);
   output = parseHttp({ command: 'curl http://local', stdout: '{"ok":true}\n', stderr: '', exitCode: 0, truncated: false });
   assert.match(output.stdout, /http_status=\?/);
+});
+
+test('explicit test and build adapters preserve compatibility golden output', async () => {
+  const testOutput = await runTestCommand(['pytest', '-q'], { executor: async () => ({ stdout: '3 passed\n', stderr: '', interleaved: '3 passed\n', exitCode: 0, truncated: false }) });
+  assert.deepEqual(testOutput, { stdout: 'status=passed exit=0 command="pytest -q"\npassed=3 failed=0\ntruncated=false\n', stderr: '', exitCode: 0 });
+  const buildOutput = await runBuildCommand(['npm', 'build'], { executor: async () => ({ stdout: 'warning: unused\n', stderr: '', interleaved: 'warning: unused\n', exitCode: 0, truncated: false }) });
+  assert.deepEqual(buildOutput, { stdout: 'status=passed exit=0 warnings=1 command="npm build"\nWARN warning: unused\nomitted=progress,downloads,successful_steps\ntruncated=false\n', stderr: '', exitCode: 0 });
 });
