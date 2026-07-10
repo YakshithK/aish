@@ -333,6 +333,32 @@ For curl, AgentShell never injects flags. It reports an HTTP status and headers
 only when curl itself emitted them; otherwise the summary says
 `http_status=?` while retaining bounded body or error evidence.
 
+Log commands are summarized as complete events rather than unrelated lines.
+AgentShell keeps stack-trace continuations attached, removes terminal control
+sequences, groups repetitions across container replicas, and attributes each
+group to its contributing services:
+
+```text
+status=failed exit=1 family=logs command="docker compose logs api"
+raw_lines=84 compact_lines=14 services=api-1,api-2 errors=20 warnings=2
+ERROR count=20 services=api-1,api-2
+  2026-07-10T12:00:00Z api-1 | Error: database unavailable
+      at connect (db.js:10:2)
+WARN count=2 services=api-1
+  2026-07-10T12:00:03Z api-1 | WARN retry scheduled
+accounted_lines=84 emitted_lines=3 collapsed_lines=57 routine_omitted_lines=24 severity_omitted_lines=0 noise_lines=0 blank_lines=0 truncation_lines=0
+overflow_groups=0 overflow_events=0 overflow_lines=0 overflow_errors=0 overflow_warnings=0
+omitted=collapsed_repetitions,routine,noise,blank,overflow,full_output
+truncated=false
+```
+
+`errors` and `warnings` count events including repetitions, while `count` is
+the size of the displayed duplicate group. Evidence is ordered by errors,
+warnings, repeated routine events, then a recent routine tail. The accounting
+fields explain where every captured source line went. Unique-group tracking and
+rendered evidence are bounded; overflow and capture truncation are always
+reported instead of being silently discarded.
+
 ### `aish test -- <command>`
 
 Runs the command after `--`, preserves the child exit code, and summarizes failures.
