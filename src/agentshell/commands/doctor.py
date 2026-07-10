@@ -65,7 +65,7 @@ def _agent_lines(home: Path | None = None) -> list[str]:
         lines.append(f"global_{host}_skill={state} path={install.path}")
     missing_hosts = [host for host in HOSTS if not installs_for(host, home=home)[0].path.exists()]
     if missing_hosts:
-        lines.append("agent_suggestion=aish install-agent " + missing_hosts[0])
+        lines.append('agent_suggestion=aish init --yes')
     else:
         lines.append("agent_suggestion=ready")
     return lines

@@ -44,17 +44,14 @@ def build_parser() -> argparse.ArgumentParser:
     init = subparsers.add_parser("init", help="install agent instructions for this repo")
     init.add_argument("path", nargs="?", default=".")
     init.add_argument("--force", action="store_true", help="overwrite existing instruction files")
+    init.add_argument("--yes", action="store_true", help="install missing global agent routing without prompting")
+    init.add_argument("--no-global", action="store_true", help="only install repo-local instructions")
     init.set_defaults(handler=_run_init)
 
     doctor = subparsers.add_parser("doctor", help="check AgentShell setup")
     doctor.add_argument("path", nargs="?", default=".")
     doctor.add_argument("--agents", action="store_true", help="include global agent skill/rule install state")
     doctor.set_defaults(handler=_run_doctor)
-
-    install_agent = subparsers.add_parser("install-agent", help="install global AgentShell rules for an agent host")
-    install_agent.add_argument("host", choices=["claude", "codex", "cursor", "opencode", "all"])
-    install_agent.add_argument("--force", action="store_true", help="overwrite existing global skill/rule files")
-    install_agent.set_defaults(handler=_run_install_agent)
 
     skill = subparsers.add_parser("skill", help="print AgentShell skill/rule content")
     skill_subparsers = skill.add_subparsers(dest="skill_command", required=True)
@@ -137,20 +134,13 @@ def _run_inspect(args: argparse.Namespace) -> CommandResult:
 def _run_init(args: argparse.Namespace) -> CommandResult:
     from .commands.init import run
 
-    return run(args.path, force=args.force)
+    return run(args.path, force=args.force, yes=args.yes, no_global=args.no_global)
 
 
 def _run_doctor(args: argparse.Namespace) -> CommandResult:
     from .commands.doctor import run
 
     return run(args.path, agents=args.agents)
-
-
-def _run_install_agent(args: argparse.Namespace) -> CommandResult:
-    from .commands.install_agent import run
-
-    return run(args.host, force=args.force)
-
 
 def _run_skill_print(args: argparse.Namespace) -> CommandResult:
     from .commands.skill import print_skill

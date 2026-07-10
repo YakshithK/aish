@@ -15,7 +15,6 @@ def test_help_exits_zero(capsys) -> None:
     assert "build" in out
     assert "diff" in out
     assert "inspect" in out
-    assert "install-agent" in out
     assert "test" in out
 
 
