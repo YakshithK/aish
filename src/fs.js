@@ -25,7 +25,13 @@ export function looksBinary(file) {
   for (const byte of sample.subarray(0, size)) { if (byte === 0) return true; if (byte < 9 || (byte > 13 && byte < 32)) control++; }
   return control / size > .2;
 }
-export const readLines = (file) => fs.readFileSync(file).toString('utf8').split(/\r?\n/u).slice(0, -Number(fs.readFileSync(file).toString('utf8').endsWith('\n')) || undefined);
+export function readLines(file) {
+  const text = fs.readFileSync(file).toString('utf8');
+  if (!text) return [];
+  const lines = text.split(/\r?\n/u);
+  if (text.endsWith('\n')) lines.pop();
+  return lines;
+}
 export function walkFiles(root) {
   const files = [];
   function walk(dir) { for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a,b) => a.name.localeCompare(b.name))) { const item = path.join(dir, entry.name); if (IGNORED_NAMES.has(entry.name) || entry.isSymbolicLink()) continue; if (entry.isDirectory()) walk(item); else files.push(item); } }

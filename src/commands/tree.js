@@ -5,7 +5,7 @@ export function run(root = '.') {
   let files = 0, dirs = 0, truncated = false; const omitted = new Set(), groups = new Map();
   function walk(dir, depth) {
     const rel = path.relative(root, dir), names = fs.readdirSync(dir, { withFileTypes: true }).sort((a,b) => a.name.localeCompare(b.name)); const visible=[]; const children=[];
-    for (const entry of names) { if (files >= TREE_MAX_FILES) { truncated=true; break; } if (IGNORED_NAMES.has(entry.name)) { omitted.add(entry.name); continue; } if (entry.isSymbolicLink()) { omitted.add(`${entry.name}@`); continue; } visible.push(entry.name); if (entry.isDirectory()) { if (depth >= TREE_MAX_DEPTH) omitted.add(entry.name); else { dirs++; children.push(path.join(dir,entry.name)); } } else files++; }
+    for (const entry of names) { if (files >= TREE_MAX_FILES) { truncated=true; break; } if (IGNORED_NAMES.has(entry.name)) { omitted.add(entry.name); continue; } if (entry.isSymbolicLink()) { omitted.add(`${entry.name}@`); continue; } if (entry.isDirectory() && depth >= TREE_MAX_DEPTH) { omitted.add(entry.name); continue; } visible.push(entry.name); if (entry.isDirectory()) { dirs++; children.push(path.join(dir,entry.name)); } else files++; }
     if (visible.length) groups.set(rel || 'root', visible.sort((a,b) => (IMPORTANT.indexOf(a)<0?99:IMPORTANT.indexOf(a))-(IMPORTANT.indexOf(b)<0?99:IMPORTANT.indexOf(b)) || a.localeCompare(b)).slice(0,12));
     for (const child of children) walk(child, depth+1);
   }
