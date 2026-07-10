@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { commands, dispatch, main } from '../src/cli.js';
 import { classifyCommand, normalizeExecutable } from '../src/command-router.js';
-import { observeCommand, parseGeneric, parseHttp, parseLogs } from '../src/command-observer.js';
+import { observeCommand, parseBuild, parseGeneric, parseHttp, parseLogs, parseTest } from '../src/command-observer.js';
 import { run as runTestCommand } from '../src/commands/test.js';
 import { run as runBuildCommand } from '../src/commands/build.js';
 
@@ -107,4 +107,32 @@ test('implicit and explicit external observations preserve missing and child exi
   assert.equal(output.exitCode, 127); assert.match(output.stdout, /command_not_found/);
   output = await dispatch(['run', '--', 'python3', '-c', 'raise SystemExit(9)']);
   assert.equal(output.exitCode, 9); assert.match(output.stdout, /family=generic/);
+});
+
+test('parser exceptions fall back to generic output without changing exit', async () => {
+  const output = await observeCommand(['tool'], {
+    executor: async () => ({ stdout: 'fatal: retained\n', stderr: '', interleaved: 'fatal: retained\n', exitCode: 6, truncated: false }),
+    parserRegistry: { generic: () => { throw new Error('parser bug'); } },
+  });
+  assert.equal(output.exitCode, 6); assert.match(output.stdout, /family=generic/); assert.match(output.stdout, /fatal: retained/);
+});
+
+test('family parsers cover empty, noise, truncation, and failure evidence', () => {
+  const base = { command: 'x', stdout: '', stderr: '', interleaved: '', exitCode: 0, truncated: false };
+  assert.match(parseLogs(base).stdout, /no_log_output/);
+  assert.match(parseHttp(base).stdout, /http_status=\?[\s\S]*no_http_output/);
+  assert.match(parseGeneric(base).stdout, /no_command_output/);
+  assert.match(parseLogs({ ...base, interleaved: '10%\nservice ready\n', truncated: true }).stdout, /LOG service ready[\s\S]*truncated=true/);
+  assert.match(parseHttp({ ...base, stderr: 'curl: (7) Failed to connect\n', exitCode: 7, truncated: true }).stdout, /curl: \(7\)[\s\S]*truncated=true/);
+  assert.match(parseGeneric({ ...base, interleaved: 'same\nsame\nError: bad\n', exitCode: 4 }).stdout, /TAIL Error: bad/);
+  assert.match(parseTest({ ...base, stdout: '', exitCode: 1 }).stdout, /parser=generic/);
+  assert.match(parseBuild({ ...base, stdout: 'progress only', exitCode: 2 }).stdout, /TAIL progress only/);
+});
+
+test('classifier includes each executable named in the initial registry', () => {
+  for (const executable of ['pytest', 'unittest', 'jest', 'vitest', 'mocha']) assert.equal(classifyCommand([executable]), 'test');
+  for (const manager of ['npm', 'pnpm', 'yarn', 'bun']) {
+    assert.equal(classifyCommand([manager, 'test']), 'test');
+    for (const subcommand of ['install', 'build', 'ci']) assert.equal(classifyCommand([manager, subcommand]), 'build');
+  }
 });

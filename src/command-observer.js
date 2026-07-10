@@ -5,7 +5,7 @@ import { joinLines, quoteCommand, result, truncateValue } from './output.js';
 export const ARBITRARY_TIMEOUT_DEFAULT = 30;
 const EVIDENCE_LIMIT = 12;
 
-export async function observeCommand(argv, { family, timeoutSeconds = ARBITRARY_TIMEOUT_DEFAULT, executor = runCommand, compatibility = false, ...executorOptions } = {}) {
+export async function observeCommand(argv, { family, timeoutSeconds = ARBITRARY_TIMEOUT_DEFAULT, executor = runCommand, compatibility = false, parserRegistry = parsers, ...executorOptions } = {}) {
   if (!argv.length) throw new TypeError('observeCommand requires non-empty argv');
   const selected = parserFamilies.includes(family) ? family : classifyCommand(argv);
   const command = quoteCommand(argv);
@@ -27,7 +27,7 @@ export async function observeCommand(argv, { family, timeoutSeconds = ARBITRARY_
     `truncated=${Boolean(execution.truncated)}`,
   ]), '', 124);
   const input = { argv, ...execution, command, family: selected, truncated: Boolean(execution.truncated) };
-  try { return parsers[selected](input); }
+  try { return parserRegistry[selected](input); }
   catch { return parseGeneric(input); }
 }
 
