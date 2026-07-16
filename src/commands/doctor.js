@@ -1,17 +1,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { HOSTS, installsFor, missingGlobalHosts } from '../global-routing.js';
 import { joinLines, result } from '../output.js';
 
 const RULES = ['AGENTS.md', 'CLAUDE.md', '.cursor/rules/agentshell.mdc'];
+const PACKAGE_JSON_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../package.json');
+const VERSION = JSON.parse(fs.readFileSync(PACKAGE_JSON_PATH, 'utf8')).version;
 
 export function run(root = '.', agents = false, home) {
   const present = RULES.filter((file) => fs.existsSync(path.join(root, file)));
   const missing = RULES.filter((file) => !present.includes(file));
   const state = present.length === RULES.length ? 'ok' : present.length ? 'partial' : 'missing';
   const lines = [
-    'aish=installed version=0.1.0',
+    `aish=installed version=${VERSION}`,
     `git_repo=${spawnSync('git', ['-C', root, 'rev-parse', '--is-inside-work-tree'], { encoding: 'utf8' }).stdout?.trim() === 'true'}`,
     `rg=${spawnSync('rg', ['--version'], { stdio: 'ignore' }).status === 0}`,
     `agent_rules=${state} present=${present.length} missing=${missing.length}`,
