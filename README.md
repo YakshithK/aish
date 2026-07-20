@@ -87,9 +87,6 @@ From a checkout:
 npm install -g .
 ```
 
-The previous Python package remains available as a compatibility path for one
-release while npm is the primary distribution.
-
 Then initialize a repo:
 
 ```bash
@@ -318,16 +315,18 @@ external executable has the same name:
 
 ```bash
 aish tree                         # AgentShell's native tree command
-aish run -- tree                  # external executable named tree
-aish run --timeout 10 -- command  # timeout must be between 0.1 and 3600 seconds
+aish run tree                     # external executable named tree
+aish run --timeout 10 command     # timeout must be between 0.1 and 3600 seconds
 ```
 
-`--` is required by `aish run`. Tokens after it are passed as the exact child
-argument list: AgentShell adds no shell parsing, interpolation, globbing,
-redirects, or pipes. Arbitrary commands are non-interactive, receive EOF on
-stdin, default to a 30-second timeout, and preserve their exit code. A typo such
-as `aish tre` is therefore attempted as an external command and normally exits
-127 with `command_not_found`.
+`--` is optional for `aish run` (`aish run -- tree` also works) — it's required
+only when the command's own first token starts with `-` and isn't `--timeout`,
+since that's otherwise ambiguous with `run`'s own flags. Tokens after the
+command are passed as the exact child argument list: AgentShell adds no shell
+parsing, interpolation, globbing, redirects, or pipes. Arbitrary commands are
+non-interactive, receive EOF on stdin, default to a 30-second timeout, and
+preserve their exit code. A typo such as `aish tre` is therefore attempted as
+an external command and normally exits 127 with `command_not_found`.
 
 For curl, AgentShell never injects flags. It reports an HTTP status and headers
 only when curl itself emitted them; otherwise the summary says
@@ -377,6 +376,12 @@ truncated=false
 
 Known parsers include pytest, unittest, Jest/Vitest-style JavaScript output, Cargo, and Go. Unknown runners fall back to a bounded useful tail with `parser=generic`.
 
+A zero exit code is not blindly trusted: if the captured output itself contains
+failure markers (e.g. a CI wrapper that swallows the real exit code), `status`
+reports `passed_with_failures_in_output` instead of `passed`, with the same
+`FAIL` evidence lines and a non-zero exit code. Treat any `status` other than
+exactly `passed` as a failure.
+
 ### `aish build -- <command>`
 
 Runs build, install, or compile commands and summarizes warnings/errors without dumping progress logs.
@@ -389,6 +394,10 @@ omitted=progress,downloads,successful_steps
 parser=build
 truncated=false
 ```
+
+Like `aish test`, a zero exit code with error/fatal/traceback text in the
+captured output reports `status=passed_with_errors_in_output` (non-zero exit)
+rather than `passed`.
 
 Useful wrappers:
 
@@ -442,6 +451,14 @@ path. Observed commands execute exact argument arrays with shell processing
 disabled and stdin ignored. Captured stdout, stderr, and interleaved evidence
 are independently bounded; timed-out process trees are terminated. AgentShell
 does not collect telemetry.
+
+On Windows, commands routed through a `.cmd`/`.bat` shim (npm, pnpm, yarn, and
+similar) are run through `cmd.exe` with every argument escaped. An argument
+containing `"`, `<`, `>`, `&`, or `|` cannot be safely escaped for a batch-file
+shim and is rejected with `error=unsupported_cmd_argument` rather than risking
+misinterpretation by the shell. An invalid working directory is reported
+distinctly as `error=invalid_cwd` rather than being misdiagnosed as a missing
+command.
 
 On POSIX, AgentShell also forwards catchable termination signals to the active
 child process group. On Windows, interactive Ctrl-C is handled when Node receives

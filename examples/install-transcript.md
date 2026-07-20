@@ -114,10 +114,11 @@ next: aish search "<query>"
 
 ## Notes
 
-- `doctor` reports `version=0.1.0` even though the installed package is
-  `@yakshith/agentshell@0.1.2` per the npm registry and this repo's
-  `package.json` — the version string embedded in `doctor`'s output appears
-  stale relative to the actual published version and is worth a follow-up fix.
+- At the time of this capture, `doctor` reported a hardcoded `version=0.1.0`
+  even though the installed package was `@yakshith/agentshell@0.1.2`. This was
+  fixed in `0.1.3`: `doctor` now reads the version from `package.json` at
+  runtime, so current installs report the real installed version instead of
+  `0.1.0`.
 - `rg=false` because ripgrep was not on `PATH` in this disposable prefix;
   `search` falls back to its built-in JS search in that case.
 - `project=unknown` because the disposable repo has no `package.json`,

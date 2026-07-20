@@ -17,14 +17,14 @@ find . -maxdepth 3 -type f
 aish tree
 
 # 3. Raw file dumps can destroy context.
-cat src/agentshell/commands/view.py
+cat src/commands/view.js
 
 # AgentShell shows exact line numbers for short files and outlines for long files.
-aish view src/agentshell/commands/view.py
+aish view src/commands/view.js
 
 # 4. Search summary instead of every matching line.
-rg "CommandResult" src tests
-aish search CommandResult
+rg "requireFile" src test
+aish search requireFile
 
 # 5. Git status without prose.
 git status
@@ -33,15 +33,15 @@ aish status
 # 6. Diff summary before patch detail.
 git diff
 aish diff
-aish diff src/agentshell/commands/view.py
+aish diff src/commands/view.js
 
 # 7. Test output summarized for the next decision.
-python -m pytest
-aish test -- python -m pytest
+node --test
+aish test -- node --test
 
 # 8. Build/install logs summarized for root cause.
-python -m build
-aish build -- python -m build
+npm install
+aish build -- npm install
 ```
 
 End the recording with:
