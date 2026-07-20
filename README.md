@@ -326,7 +326,14 @@ command are passed as the exact child argument list: AgentShell adds no shell
 parsing, interpolation, globbing, redirects, or pipes. Arbitrary commands are
 non-interactive, receive EOF on stdin, default to a 30-second timeout, and
 preserve their exit code. A typo such as `aish tre` is therefore attempted as
-an external command and normally exits 127 with `command_not_found`.
+an external command and normally exits 127 with `command_not_found`. When that
+happens and the typo is close to one of AgentShell's own subcommands, a
+`hint=did you mean "aish <command>"?` line is added — but only on
+`command_not_found`. If the typo happens to match a real binary on `PATH`
+(`aish stat` finding coreutils' `stat`, say, instead of `aish status`), that
+binary runs and its own error is shown with no hint, since AgentShell can't
+tell a deliberate external command from a fat-fingered subcommand once
+something actually executed.
 
 For curl, AgentShell never injects flags. It reports an HTTP status and headers
 only when curl itself emitted them; otherwise the summary says
@@ -374,7 +381,7 @@ parser=pytest
 truncated=false
 ```
 
-Known parsers include pytest, unittest, Jest/Vitest-style JavaScript output, Cargo, and Go. Unknown runners fall back to a bounded useful tail with `parser=generic`.
+Known parsers include pytest, unittest, Jest/Vitest-style JavaScript output, Cargo, Go, and Node's own `node --test` runner. Unknown runners fall back to a bounded useful tail with `parser=generic`; in that case `passed`/`failed` report `?` rather than a guessed number.
 
 A zero exit code is not blindly trusted: if the captured output itself contains
 failure markers (e.g. a CI wrapper that swallows the real exit code), `status`

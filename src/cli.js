@@ -28,6 +28,23 @@ function commandHelp(command) {
 }
 
 function usage(message) { throw new AishError(`error=usage ${message}`, EXIT_USAGE); }
+function editDistance(a, b) {
+  const rows = a.length + 1, cols = b.length + 1;
+  const d = Array.from({ length: rows }, (_, i) => [i, ...Array(cols - 1).fill(0)]);
+  for (let j = 1; j < cols; j += 1) d[0][j] = j;
+  for (let i = 1; i < rows; i += 1) {
+    for (let j = 1; j < cols; j += 1) {
+      d[i][j] = a[i - 1] === b[j - 1] ? d[i - 1][j - 1] : 1 + Math.min(d[i - 1][j], d[i][j - 1], d[i - 1][j - 1]);
+    }
+  }
+  return d[rows - 1][cols - 1];
+}
+function closestCommand(command) {
+  if (command.length < 2) return null;
+  const ranked = commands.map((name) => [name, editDistance(command, name)]).filter(([, dist]) => dist <= 2).sort((a, b) => a[1] - b[1]);
+  if (!ranked.length || (ranked[1] && ranked[1][1] === ranked[0][1])) return null;
+  return ranked[0][0];
+}
 function rejectUnknownOptions(args, allowed = []) {
   const unknown = args.find((arg) => arg.startsWith('-') && !allowed.includes(arg));
   if (unknown) usage(`unknown_option=${unknown}`);
@@ -37,9 +54,16 @@ function atMost(items, count) { if (items.length > count) usage(`unexpected_argu
 
 export async function dispatch(argv, { observer = observeCommand } = {}) {
   if (argv[0] === '--help' || argv[0] === '-h') return result(help());
-  if (!argv.length) usage('missing=command');
+  if (!argv.length) usage('missing=command hint="aish --help"');
   const [command, ...args] = argv;
-  if (!commands.includes(command)) return observer(argv, { timeoutSeconds: ARBITRARY_TIMEOUT_DEFAULT });
+  if (!commands.includes(command)) {
+    const output = await observer(argv, { timeoutSeconds: ARBITRARY_TIMEOUT_DEFAULT });
+    if (output.exitCode === 127 && /error=command_not_found/u.test(`${output.stdout}${output.stderr}`)) {
+      const suggestion = closestCommand(command);
+      if (suggestion) return { ...output, stdout: `${output.stdout.trimEnd()}\nhint=did you mean "aish ${suggestion}"?\n` };
+    }
+    return output;
+  }
   if (args[0] === '--help' || args[0] === '-h') return result(commandHelp(command));
 
   if (command === 'tree' || command === 'status' || command === 'inspect') {

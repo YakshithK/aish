@@ -3,8 +3,8 @@ import { sanitizeTerminalText } from '../terminal.js';
 
 export function parse(input) {
   const output = sanitizeTerminalText(`${input.stdout}\n${input.stderr}`).trim();
-  const [parser, failures] = parseFailures(output);
-  const [passed, failed] = countTests(output, input.exitCode === 0 ? 0 : failures.length);
+  const [parser, failures, structured] = parseFailures(output);
+  const [passed, failed] = countTests(output, input.exitCode === 0 ? 0 : (structured ? failures.length : null));
   if (input.exitCode === 0) {
     return result(joinLines([
       `status=${failed === '0' || failed === '?' ? 'passed' : 'passed_with_failures_in_output'} exit=0 command="${input.command}"`,
@@ -24,7 +24,7 @@ function parseFailures(output) {
   let match;
   if (/FAILED .+::|FAILURES/u.test(output)) {
     const lines = [...output.matchAll(/^FAILED\s+(\S+)\s+-\s+(.+)$/gmu)].slice(0, 10).map(item => `FAIL ${item[1]} ${truncateValue(item[2])}`);
-    return ['pytest', lines.length ? lines : testTail(output)];
+    return lines.length ? ['pytest', lines, true] : ['pytest', testTail(output), false];
   }
   if (/--- FAIL:/u.test(output)) {
     const lines = [];
@@ -33,7 +33,11 @@ function parseFailures(output) {
       if (match) lines.push(`FAIL ${match[1]}`);
       else { match = line.trim().match(/^([\w./-]+\.go:\d+):\s+(.+)/u); if (match && lines.length) lines[lines.length - 1] += ` ${match[1]} ${truncateValue(match[2], 120)}`; }
     }
-    return ['go', lines.length ? lines : testTail(output)];
+    return lines.length ? ['go', lines, true] : ['go', testTail(output), false];
+  }
+  if (/^\s*✖\s+/mu.test(output) || /ℹ (?:pass|fail) \d+/u.test(output)) {
+    const lines = [...output.matchAll(/^\s*✖\s+(.+)$/gmu)].slice(0, 10).map(item => `FAIL ${truncateValue(item[1])}`);
+    return lines.length ? ['node', lines, true] : ['node', testTail(output), false];
   }
   if (/^\s*FAIL\s+/mu.test(output) || /[×✕]\s+/u.test(output)) {
     let file = ''; const lines = [];
@@ -41,7 +45,8 @@ function parseFailures(output) {
       match = line.trim().match(/^FAIL\s+(.+)/u); if (match) file = match[1];
       match = line.trim().match(/^[×✕]\s+(.+)/u); if (match) lines.push(`FAIL ${file} ${match[1]}`.trim());
     }
-    return ['javascript', lines.length ? lines : file ? [`FAIL ${file}`] : testTail(output)];
+    if (lines.length) return ['javascript', lines, true];
+    return file ? ['javascript', [`FAIL ${file}`], true] : ['javascript', testTail(output), false];
   }
   if (/test result: FAILED|---- .+ stdout ----/u.test(output)) {
     const lines = [];
@@ -49,13 +54,13 @@ function parseFailures(output) {
       match = line.trim().match(/^----\s+(.+?)\s+stdout\s+----/u); if (match) lines.push(`FAIL ${match[1]}`);
       match = line.match(/panicked at (.+)/u); if (match && lines.length) lines[lines.length - 1] += ` ${truncateValue(match[1], 120)}`;
     }
-    return ['cargo', lines.length ? lines : testTail(output)];
+    return lines.length ? ['cargo', lines, true] : ['cargo', testTail(output), false];
   }
   if (/FAIL: .* \(|FAILED \(/u.test(output)) {
     const lines = [...output.matchAll(/^FAIL:\s+(.+)$/gmu)].map(item => `FAIL ${item[1]}`).slice(0, 10);
-    return ['unittest', lines.length ? lines : testTail(output)];
+    return lines.length ? ['unittest', lines, true] : ['unittest', testTail(output), false];
   }
-  return ['generic', testTail(output)];
+  return ['generic', testTail(output), false];
 }
 
 const noise = line => /^[.=#* -]+$/u.test(line) || /^\[\d+\/\d+\]|^\d+(?:\.\d+)?%/u.test(line) || /^(Downloading |Installing |Collecting |Requirement already satisfied)/u.test(line);
@@ -65,10 +70,13 @@ const testTail = output => usefulLines(output).filter(line => !line.startsWith('
 function countTests(output, fallback) {
   const cargo = output.match(/test result: FAILED\.\s+(\d+)\s+passed;\s+(\d+)\s+failed/u); if (cargo) return [cargo[1], cargo[2]];
   const js = output.match(/(?:Tests:\s+)?(\d+)\s+failed[,;]\s+(\d+)\s+passed/u); if (js) return [js[2], js[1]];
+  const nodePass = output.match(/ℹ pass (\d+)/u), nodeFail = output.match(/ℹ fail (\d+)/u);
+  if (nodePass || nodeFail) return [nodePass?.[1] ?? '?', nodeFail?.[1] ?? '0'];
   const failedFirst = output.match(/(\d+)\s+failed/u);
   const passed = output.match(/(\d+)\s+passed/u)?.[1] ?? '?';
   if (failedFirst) return [passed, failedFirst[1]];
   if (fallback === 0) return [passed, '0'];
   const go = (output.match(/--- FAIL:/gu) || []).length;
-  return ['?', String(go || fallback || '?')];
+  if (go) return [passed, String(go)];
+  return [passed, fallback != null ? String(fallback) : '?'];
 }

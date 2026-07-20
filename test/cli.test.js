@@ -169,6 +169,18 @@ test('implicit and explicit external observations preserve missing and child exi
   assert.equal(output.exitCode, 9); assert.match(output.stdout, /family=generic/);
 });
 
+test('a near-miss typo of a real subcommand gets a "did you mean" hint, an unrelated missing binary does not', async () => {
+  const missing = async () => ({ stderr: 'error=command_not_found command=int', exitCode: 127, missing: true });
+  const output = await dispatch(['int'], { observer: (argv, opts) => observeCommand(argv, { ...opts, executor: missing }) });
+  assert.match(output.stdout, /hint=did you mean "aish init"\?/);
+  const unrelated = await dispatch(['definitely-not-aish-command']);
+  assert.doesNotMatch(unrelated.stdout, /hint=/);
+});
+
+test('bare invocation points to --help', async () => {
+  await assert.rejects(() => dispatch([]), (error) => error.exitCode === 2 && /hint="aish --help"/.test(error.message));
+});
+
 test('parser exceptions fall back to generic output without changing exit', async () => {
   const output = await observeCommand(['tool'], {
     executor: async () => ({ stdout: 'fatal: retained\n', stderr: '', interleaved: 'fatal: retained\n', exitCode: 6, truncated: false }),
@@ -187,6 +199,23 @@ test('family parsers cover empty, noise, truncation, and failure evidence', () =
   assert.match(parseGeneric({ ...base, interleaved: 'same\nsame\nError: bad\n', exitCode: 4 }).stdout, /TAIL Error: bad/);
   assert.match(parseTest({ ...base, stdout: '', exitCode: 1 }).stdout, /parser=generic/);
   assert.match(parseBuild({ ...base, stdout: 'progress only', exitCode: 2 }).stdout, /TAIL progress only/);
+});
+
+test('test parser reads node --test summary counts instead of guessing from tail-line count', () => {
+  const nodeTestOutput = [
+    'ℹ tests 2', 'ℹ suites 0', 'ℹ pass 1', 'ℹ fail 1', 'ℹ cancelled 0', 'ℹ skipped 0', 'ℹ todo 0',
+    'ℹ duration_ms 12.3', '✖ failing tests:', 'test at x:1:1', '✖ fails (1ms)', "'test failed'",
+  ].join('\n');
+  const output = parseTest({ command: 'node --test', stdout: nodeTestOutput, stderr: '', interleaved: '', exitCode: 1, truncated: false });
+  assert.match(output.stdout, /passed=1 failed=1 /);
+  assert.match(output.stdout, /parser=node/);
+});
+
+test('unrecognized failing test output reports an unknown count rather than the tail-line length', () => {
+  const opaqueOutput = Array.from({ length: 12 }, (_, i) => `some unrelated diagnostic line ${i}`).join('\n');
+  const output = parseTest({ command: 'weird-runner', stdout: opaqueOutput, stderr: '', interleaved: '', exitCode: 1, truncated: false });
+  assert.match(output.stdout, /passed=\? failed=\? /);
+  assert.doesNotMatch(output.stdout, /failed=12/);
 });
 
 test('test parser counts failures on exit zero and avoids repeated-passed ReDoS', () => {
