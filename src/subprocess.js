@@ -10,6 +10,8 @@ const EXECUTABLE_EXTENSIONS = new Set(['.exe', '.com']);
 const UNSAFE_CMD_ARGUMENT = /["<>&|]/u;
 // See https://qntm.org/cmd and node-cross-spawn's lib/util/escape.js, which this mirrors.
 const META_CHARS_REGEXP = /([()[\]%!^"`<>&|;, *?])/g;
+const activeChildren = new Set();
+let signalHandlersInstalled = false;
 
 // Windows cannot execute .cmd/.bat files without a shell (CreateProcess only
 // auto-appends .exe for extensionless names), so npm/pnpm/yarn are unreachable
@@ -111,6 +113,8 @@ export function runCommand(args, { cwd, timeout = DEFAULT_TIMEOUT_SECONDS, maxBy
         windowsVerbatimArguments: Boolean(shim),
         stdio: ['ignore', 'pipe', 'pipe'],
       });
+      activeChildren.add(child);
+      ensureSignalHandlers();
     } catch (error) {
       finish({ stderr: `error=subprocess_failed detail=${error.message}`, exitCode: 3 });
       return;
@@ -118,15 +122,23 @@ export function runCommand(args, { cwd, timeout = DEFAULT_TIMEOUT_SECONDS, maxBy
 
     child.stdout.on('data', (chunk) => { stdout.append(chunk); interleaved.append(chunk); });
     child.stderr.on('data', (chunk) => { stderr.append(chunk); interleaved.append(chunk); });
-    child.on('error', (error) => finish({
-      stderr: `error=command_not_found command=${shim ? args[0] : error.path ?? args[0]}`,
-      exitCode: 127,
-      missing: true,
-    }));
-    child.on('close', (code) => { if (!timedOut) finish({ exitCode: code ?? 3, timedOut: false }); });
+    child.on('error', (error) => {
+      activeChildren.delete(child);
+      finish({
+        stderr: `error=command_not_found command=${shim ? args[0] : error.path ?? args[0]}`,
+        exitCode: 127,
+        missing: true,
+      });
+    });
+    child.on('close', (code) => { activeChildren.delete(child); if (!timedOut) finish({ exitCode: code ?? 3, timedOut: false }); });
 
     timeoutTimer = setTimeout(() => {
       timedOut = true;
+      if (process.platform === 'win32') {
+        terminateTree(child, true);
+        settleTimer = setTimeout(() => finish({ exitCode: 124, timedOut: true }), KILL_SETTLE_MS);
+        return;
+      }
       terminateTree(child, false);
       forceTimer = setTimeout(() => {
         terminateTree(child, true);
@@ -134,6 +146,24 @@ export function runCommand(args, { cwd, timeout = DEFAULT_TIMEOUT_SECONDS, maxBy
       }, TERMINATION_GRACE_MS);
     }, timeout * 1000);
   });
+}
+
+function ensureSignalHandlers() {
+  if (signalHandlersInstalled) return;
+  signalHandlersInstalled = true;
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.on(signal, () => {
+      const exitCode = signal === 'SIGINT' ? 130 : 143;
+      if (!activeChildren.size) process.exit(exitCode);
+      for (const child of activeChildren) terminateTree(child, false);
+      const forceTimer = setTimeout(() => {
+        for (const child of activeChildren) terminateTree(child, true);
+        const exitTimer = setTimeout(() => process.exit(exitCode), KILL_SETTLE_MS);
+        exitTimer.unref?.();
+      }, process.platform === 'win32' ? 0 : TERMINATION_GRACE_MS);
+      forceTimer.unref?.();
+    });
+  }
 }
 
 function terminateTree(child, force) {
