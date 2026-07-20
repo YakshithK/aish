@@ -49,6 +49,7 @@ test('test and build accept the command with or without a leading --, reject emp
 test('classifier covers normalized executable shapes and near misses', () => {
   const cases = [
     [['pytest'], 'test'], [['npm', 'test'], 'test'], [['cargo', 'test'], 'test'], [['go', 'test'], 'test'],
+    [['npm', 'run', 'test'], 'test'], [['pnpm', 'run', 'test:unit'], 'test'], [['yarn', 'run', 'build'], 'build'],
     [['pnpm', 'install'], 'build'], [['yarn', 'build'], 'build'], [['bun', 'ci'], 'build'], [['cargo', 'check'], 'build'],
     [['go', 'build'], 'build'], [['pip', 'install'], 'build'], [['uv', 'sync'], 'build'],
     [['docker', 'logs', 'api'], 'logs'], [['docker', 'compose', 'logs'], 'logs'], [['docker-compose', 'logs'], 'logs'], [['kubectl', 'logs'], 'logs'],
@@ -164,7 +165,7 @@ test('invalid run grammar exits usage without invoking the observer', async () =
 test('implicit and explicit external observations preserve missing and child exit codes', async () => {
   let output = await dispatch(['definitely-not-aish-command']);
   assert.equal(output.exitCode, 127); assert.match(output.stdout, /command_not_found/);
-  output = await dispatch(['run', '--', 'python3', '-c', 'raise SystemExit(9)']);
+  output = await dispatch(['run', '--', process.execPath, '-e', 'process.exit(9)']);
   assert.equal(output.exitCode, 9); assert.match(output.stdout, /family=generic/);
 });
 
@@ -186,6 +187,27 @@ test('family parsers cover empty, noise, truncation, and failure evidence', () =
   assert.match(parseGeneric({ ...base, interleaved: 'same\nsame\nError: bad\n', exitCode: 4 }).stdout, /TAIL Error: bad/);
   assert.match(parseTest({ ...base, stdout: '', exitCode: 1 }).stdout, /parser=generic/);
   assert.match(parseBuild({ ...base, stdout: 'progress only', exitCode: 2 }).stdout, /TAIL progress only/);
+});
+
+test('test parser counts failures on exit zero and avoids repeated-passed ReDoS', () => {
+  const suspicious = parseTest({ command: 'jest', stdout: 'Tests: 3 failed, 2 passed\n', stderr: '', interleaved: '', exitCode: 0, truncated: false });
+  assert.equal(suspicious.exitCode, 1);
+  assert.match(suspicious.stdout, /status=passed_with_failures_in_output/);
+  assert.match(suspicious.stdout, /passed=2 failed=3/);
+  const started = Date.now();
+  const output = parseTest({ command: 'pytest', stdout: '1 passed '.repeat(8000), stderr: '', interleaved: '', exitCode: 1, truncated: false });
+  assert.ok(Date.now() - started < 500);
+  assert.match(output.stdout, /status=failed/);
+});
+
+test('family parsers sanitize ANSI outside logs and build flags ignored errors on exit zero', () => {
+  const color = '\u001b[31mFAIL: test_x (tests.T)\u001b[0m\nFAILED (failures=1)';
+  const parsed = parseTest({ command: 'python -m unittest', stdout: color, stderr: '', interleaved: '', exitCode: 1, truncated: false });
+  assert.doesNotMatch(parsed.stdout, /\u001b/);
+  assert.match(parsed.stdout, /FAIL test_x/);
+  const build = parseBuild({ command: 'make', stdout: 'error: ignored by wrapper\n', stderr: '', interleaved: '', exitCode: 0, truncated: false });
+  assert.equal(build.exitCode, 1);
+  assert.match(build.stdout, /status=passed_with_errors_in_output/);
 });
 
 test('classifier includes each executable named in the initial registry', () => {

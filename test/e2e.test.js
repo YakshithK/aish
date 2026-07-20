@@ -20,7 +20,7 @@ test('Node command surface supports the complete agent workflow',async()=>{
     assert.match((await dispatch(['search','login'])).stdout,/src\/auth.py count=1 lines=1/);
     assert.match((await dispatch(['view','src/auth.py:1-2'])).stdout,/1: def login/);
     assert.match((await dispatch(['status'])).stdout,/branch=/);
-    const failed=await dispatch(['test','--','python3','-c',"print('FAILED tests/test_auth.py::test_login - AssertionError: expected 200');raise SystemExit(1)"]);
+    const failed=await dispatch(['test','--',process.execPath,'-e',"console.log('FAILED tests/test_auth.py::test_login - AssertionError: expected 200');process.exit(1)"]);
     assert.equal(failed.exitCode,1);assert.match(failed.stdout,/FAIL tests\/test_auth.py::test_login/);
   } finally { process.chdir(previous); }
 });

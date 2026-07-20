@@ -15,6 +15,8 @@ export function classifyCommand(argv) {
   const subcommand = String(argv[1] ?? '').toLowerCase();
   const third = String(argv[2] ?? '').toLowerCase();
   if (TEST_EXECUTABLES.has(executable)) return 'test';
+  if (PACKAGE_MANAGERS.has(executable) && subcommand === 'run' && /(?:^|[-_:])test(?:$|[-_:])/u.test(third)) return 'test';
+  if (PACKAGE_MANAGERS.has(executable) && subcommand === 'run' && /(?:^|[-_:])build(?:$|[-_:])/u.test(third)) return 'build';
   if (PACKAGE_MANAGERS.has(executable) && subcommand === 'test') return 'test';
   if ((executable === 'cargo' || executable === 'go') && subcommand === 'test') return 'test';
   if (PACKAGE_MANAGERS.has(executable) && ['install', 'build', 'ci'].includes(subcommand)) return 'build';

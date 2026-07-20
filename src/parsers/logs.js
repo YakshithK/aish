@@ -1,11 +1,10 @@
 import { joinLines, result } from '../output.js';
+import { sanitizeTerminalText } from '../terminal.js';
 
 export const LOG_GROUP_MAX = 256;
 export const LOG_EVIDENCE_EVENT_MAX = 12;
 export const LOG_OUTPUT_MAX_BYTES = 12000;
 
-const ANSI = /[\u001b\u009b](?:(?:\][^\u0007]*(?:\u0007|\u001b\\))|(?:\[[0-?]*[ -/]*[@-~])|(?:[()][0-2A-Z0-9])|(?:[ -/]*[@-~]))/gu;
-const UNSAFE_CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001a\u001c-\u001f\u007f-\u009f]/gu;
 const TIMESTAMP = /^(?:\[)?((?:\d{4}-\d{2}-\d{2}[T ][0-9:.+-]+Z?)|(?:\d{2}:\d{2}:\d{2}(?:\.\d+)?))(?:\])?\s+/u;
 const SERVICE_PIPE = /^([\p{L}\p{N}_.\/-]+)\s+\|\s?/u;
 const SERVICE_BRACKET = /^\[([\p{L}\p{N}_.\/-]+)\]\s*/u;
@@ -16,7 +15,7 @@ const PROGRESS_NOISE = /^(?:[.=#* -]+|\[\d+\/\d+\]|\d+(?:\.\d+)?%)(?:\s*)$/u;
 const CONTINUATION = /^(?:\s+|at\s+|Caused by:|Traceback \(most recent call last\):|File "|During handling of the above exception|The above exception was the direct cause)/u;
 
 export function sanitizeLogText(value) {
-  return String(value ?? '').replaceAll('\r\n', '\n').replaceAll('\r', '\n').replace(ANSI, '').replace(UNSAFE_CONTROL, '');
+  return sanitizeTerminalText(value);
 }
 
 export function segmentLogEvents(value) {

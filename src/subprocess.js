@@ -7,6 +7,7 @@ export const DEFAULT_TIMEOUT_SECONDS = 120;
 export const TERMINATION_GRACE_MS = 2000;
 const KILL_SETTLE_MS = 100;
 const EXECUTABLE_EXTENSIONS = new Set(['.exe', '.com']);
+const UNSAFE_CMD_ARGUMENT = /["<>&|]/u;
 // See https://qntm.org/cmd and node-cross-spawn's lib/util/escape.js, which this mirrors.
 const META_CHARS_REGEXP = /([()[\]%!^"`<>&|;, *?])/g;
 
@@ -47,6 +48,12 @@ function escapeCmdArgument(arg, doubleEscapeMetaChars) {
 function windowsCmdShim(executable, childArgs) {
   const resolved = resolveWindowsExecutable(executable);
   if (!resolved || EXECUTABLE_EXTENSIONS.has(path.extname(resolved).toLowerCase())) return null;
+  const unsafe = childArgs.find((arg) => UNSAFE_CMD_ARGUMENT.test(String(arg)));
+  if (unsafe != null) {
+    return {
+      error: `error=unsupported_cmd_argument command=${executable} detail=unsafe_windows_batch_argument`,
+    };
+  }
   // npm's own package-local .cmd shims (node_modules/.bin/*.cmd) re-run cmd.exe's
   // own ^-escapes a second time internally, so they need double escaping; the
   // real npm/pnpm/yarn global commands we actually target do not.
@@ -84,7 +91,16 @@ export function runCommand(args, { cwd, timeout = DEFAULT_TIMEOUT_SECONDS, maxBy
       });
     };
 
+    if (cwd && !fs.existsSync(cwd)) {
+      finish({ stderr: `error=invalid_cwd cwd=${cwd}`, exitCode: 3, invalidCwd: true });
+      return;
+    }
+
     const shim = process.platform === 'win32' ? windowsCmdShim(args[0], args.slice(1)) : null;
+    if (shim?.error) {
+      finish({ stderr: shim.error, exitCode: 3, unsafeArgument: true });
+      return;
+    }
 
     try {
       child = spawn(shim ? shim.file : args[0], shim ? shim.args : args.slice(1), {

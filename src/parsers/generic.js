@@ -1,4 +1,5 @@
 import { joinLines, result, truncateValue } from '../output.js';
+import { sanitizeTerminalText } from '../terminal.js';
 
 const EVIDENCE_LIMIT = 12;
 const noise = line => /^[.=#* -]+$/u.test(line) || /^\[\d+\/\d+\]|^\d+(?:\.\d+)?%/u.test(line) || /^(Downloading |Installing |Collecting |Requirement already satisfied)/u.test(line);
@@ -7,7 +8,7 @@ const distinct = lines => [...new Set(lines)];
 const omission = (total, shown) => total > shown ? `omitted=${total - shown},progress,full_output` : 'omitted=progress,full_output';
 
 export function parse(input) {
-  const lines = usefulLines(input.interleaved || `${input.stdout}\n${input.stderr}`);
+  const lines = usefulLines(sanitizeTerminalText(input.interleaved || `${input.stdout}\n${input.stderr}`));
   const errorLike = lines.filter(line => /(^|\W)(error|fatal|panic|exception|failed)(\W|$)/iu.test(line));
   const selected = distinct(input.exitCode && errorLike.length ? errorLike : lines.slice(-EVIDENCE_LIMIT)).slice(0, EVIDENCE_LIMIT);
   return result(joinLines([
