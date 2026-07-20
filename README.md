@@ -442,3 +442,10 @@ path. Observed commands execute exact argument arrays with shell processing
 disabled and stdin ignored. Captured stdout, stderr, and interleaved evidence
 are independently bounded; timed-out process trees are terminated. AgentShell
 does not collect telemetry.
+
+On POSIX, AgentShell also forwards catchable termination signals to the active
+child process group. On Windows, interactive Ctrl-C is handled when Node receives
+the console signal, but external parent-process termination such as
+`child.kill('SIGINT')`, `taskkill /PID`, or forced process termination is not
+catchable by JavaScript signal handlers; child cleanup in those cases depends on
+the caller killing the process tree.
