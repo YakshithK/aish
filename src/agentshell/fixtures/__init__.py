@@ -1,1 +1,0 @@
-"""Bundled AgentShell fixtures."""

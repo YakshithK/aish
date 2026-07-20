@@ -1,1 +1,2 @@
+* text=auto eol=lf
 src/fixtures/benchmark/git_diff.txt whitespace=-blank-at-eol
