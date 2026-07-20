@@ -109,11 +109,25 @@ test('http parser reports emitted headers and never infers a missing status', ()
   assert.match(output.stdout, /http_status=\?/);
 });
 
-test('explicit test and build adapters preserve compatibility golden output', async () => {
+test('explicit test and build adapters produce the same golden output as the bare invocation', async () => {
   const testOutput = await runTestCommand(['pytest', '-q'], { executor: async () => ({ stdout: '3 passed\n', stderr: '', interleaved: '3 passed\n', exitCode: 0, truncated: false }) });
   assert.deepEqual(testOutput, { stdout: 'status=passed exit=0 command="pytest -q"\npassed=3 failed=0\ntruncated=false\n', stderr: '', exitCode: 0 });
   const buildOutput = await runBuildCommand(['npm', 'build'], { executor: async () => ({ stdout: 'warning: unused\n', stderr: '', interleaved: 'warning: unused\n', exitCode: 0, truncated: false }) });
   assert.deepEqual(buildOutput, { stdout: 'status=passed exit=0 warnings=1 command="npm build"\nWARN warning: unused\nomitted=progress,downloads,successful_steps\ntruncated=false\n', stderr: '', exitCode: 0 });
+});
+
+test('test and build no longer diverge from the bare path on missing commands or timeouts', async () => {
+  const missing = async () => ({ stdout: '', stderr: 'error=command_not_found command=pytest', exitCode: 127, missing: true });
+  const testMissing = await runTestCommand(['pytest', '-q'], { executor: missing });
+  assert.match(testMissing.stdout, /^status=error exit=127 family=test command="pytest -q"/);
+  const buildMissing = await runBuildCommand(['npm', 'build'], { executor: missing });
+  assert.match(buildMissing.stdout, /^status=error exit=127 family=build command="npm build"/);
+
+  const timedOut = async () => ({ stdout: '', stderr: '', interleaved: 'running...\n', exitCode: 124, timedOut: true, truncated: false });
+  const testTimeout = await runTestCommand(['pytest', '-q'], { executor: timedOut });
+  assert.match(testTimeout.stdout, /^status=timeout exit=124 timeout=true family=test command="pytest -q"/);
+  const buildTimeout = await runBuildCommand(['npm', 'build'], { executor: timedOut });
+  assert.match(buildTimeout.stdout, /^status=timeout exit=124 timeout=true family=build command="npm build"/);
 });
 
 test('run bypasses native precedence and passes exact argv after the separator', async () => {
