@@ -21,12 +21,17 @@ export function requireFile(file) {
 export function looksBinary(file) {
   const fd = fs.openSync(file, 'r'); const sample = Buffer.alloc(4096); const size = fs.readSync(fd, sample); fs.closeSync(fd);
   if (!size) return false;
+  if ((size >= 2 && sample[0] === 0xff && sample[1] === 0xfe) || (sample[0] === 0xfe && sample[1] === 0xff)) return false;
   let control = 0;
   for (const byte of sample.subarray(0, size)) { if (byte === 0) return true; if (byte < 9 || (byte > 13 && byte < 32)) control++; }
   return control / size > .2;
 }
 export function readLines(file) {
-  const text = fs.readFileSync(file).toString('utf8');
+  const buffer = fs.readFileSync(file);
+  let text;
+  if (buffer.length >= 2 && buffer[0] === 0xff && buffer[1] === 0xfe) text = buffer.subarray(2).toString('utf16le');
+  else if (buffer.length >= 2 && buffer[0] === 0xfe && buffer[1] === 0xff) text = Buffer.from(buffer.subarray(2)).swap16().toString('utf16le');
+  else text = buffer.toString('utf8').replace(/^\uFEFF/u, '');
   if (!text) return [];
   const lines = text.split(/\r?\n/u);
   if (text.endsWith('\n')) lines.pop();

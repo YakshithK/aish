@@ -4,6 +4,11 @@ import { AGENT_INSTRUCTIONS, CURSOR_INSTRUCTIONS } from '../agent-rules.js';
 import { globalRoutingLines, missingGlobalHosts } from '../global-routing.js';
 import { joinLines, result } from '../output.js';
 
+const matchesGeneratedContent = (name, content) => (
+  (name === 'AGENTS.md' || name === 'CLAUDE.md') ? content === AGENT_INSTRUCTIONS :
+    name === '.cursor/rules/agentshell.mdc' ? content === CURSOR_INSTRUCTIONS : false
+);
+
 export async function run(root = '.', options = {}) {
   if (typeof options === 'boolean') options = { force: options };
   const { force = false, yes = false, noGlobal = false, home } = options;
@@ -32,6 +37,14 @@ export async function run(root = '.', options = {}) {
       skipped += 1;
       lines.push(`skip ${file}`);
       continue;
+    }
+    if (exists && force) {
+      const current = fs.readFileSync(file, 'utf8');
+      if (!matchesGeneratedContent(name, current)) {
+        const backup = `${file}.bak`;
+        fs.copyFileSync(file, backup);
+        lines.push(`backup ${backup}`);
+      }
     }
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, content);
