@@ -1,7 +1,11 @@
 import test from'node:test';import assert from'node:assert/strict';import{run as runTest}from'../src/commands/test.js';import{run as build}from'../src/commands/build.js';
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { runCommand, CAPTURE_MAX_BYTES } from '../src/subprocess.js';
 import { observeCommand } from '../src/command-observer.js';
+
+const ECHO_ARGS_CMD = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures/echo-args.cmd');
 test('test command preserves pass/failure and parser evidence',async()=>{let r=await runTest(['python3','-c',"print('3 passed')"]);assert.equal(r.exitCode,0);assert.match(r.stdout,/passed=3/);r=await runTest(['python3','-c',"print('FAILED tests/a.py::test_x - AssertionError: no');raise SystemExit(7)"]);assert.equal(r.exitCode,7);assert.match(r.stdout,/FAIL tests\/a.py::test_x AssertionError: no/);});
 test('parser matrix covers javascript cargo go and unittest',async()=>{const cases=[["FAIL  src/a.test.js\n × rejects empty\nTests: 1 failed, 3 passed",'javascript'],["---- tests::x stdout ----\nthread x panicked at src/lib.rs:2: bad\ntest result: FAILED. 2 passed; 1 failed",'cargo'],["--- FAIL: TestX (0s)\n x_test.go:2: bad\nFAIL",'go'],["FAIL: test_x (tests.T)\nFAILED (failures=1)",'unittest']];for(const[o,p]of cases){const r=await runTest(['python3','-c',`print(${JSON.stringify(o)});raise SystemExit(1)`]);assert.match(r.stdout,new RegExp(`parser=${p}`));}});
 test('build extracts warnings/errors, timeout and truncation are bounded',async()=>{let r=await build(['python3','-c',"print('Downloading x');print('warning: unused')"]);assert.match(r.stdout,/warnings=1/);r=await build(['python3','-c',"print('fatal: build failed');raise SystemExit(2)"]);assert.match(r.stdout,/ERROR fatal: build failed/);r=await runTest(['python3','-c','import time; time.sleep(2)'],{timeout:.02});assert.equal(r.exitCode,124);r=await runTest(['python3','-c',"print('x'*1000)"],{maxBytes:20});assert.match(r.stdout,/truncated=true/);});
@@ -48,6 +52,15 @@ test('timeout terminates descendants in the isolated POSIX process group', { ski
   } catch (error) {
     if (error.code !== 'ESRCH' && error.code !== 'ENOENT') throw error;
   }
+});
+test('Windows batch files (.cmd/.bat) run without a shell, argv preserved through escaping', { skip: process.platform !== 'win32' }, async () => {
+  // Arguments with spaces, dashes, dots, and colons cover the realistic case
+  // (npm/pnpm/yarn test-runner and package flags). Literal ", &, and bare ^ in
+  // an argument cannot be round-tripped through a .bat/.cmd file via cmd.exe
+  // under any escaping scheme — the same limitation cross-spawn ships with.
+  const r = await runCommand([ECHO_ARGS_CMD, 'has space', '--save-dev', 'v1.2.3', 'C:\\path\\to\\file.js']);
+  assert.equal(r.exitCode, 7);
+  assert.match(r.stdout, /ARG=has space\r?\nARG=--save-dev\r?\nARG=v1\.2\.3\r?\nARG=C:\\path\\to\\file\.js/);
 });
 test('logs observer E2E preserves child exit and multiline interleaved evidence', async () => {
   const script = "import sys,time;print('api | Error: failed',flush=True);time.sleep(.02);print('    at worker (x.js:2:1)',file=sys.stderr,flush=True);sys.exit(11)";

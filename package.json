@@ -1,6 +1,6 @@
 {
   "name": "@yakshith/agentshell",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Compact terminal observations for AI coding agents.",
   "type": "module",
   "bin": {

@@ -1,9 +1,60 @@
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export const CAPTURE_MAX_BYTES = 200000;
 export const DEFAULT_TIMEOUT_SECONDS = 120;
 export const TERMINATION_GRACE_MS = 2000;
 const KILL_SETTLE_MS = 100;
+const EXECUTABLE_EXTENSIONS = new Set(['.exe', '.com']);
+// See https://qntm.org/cmd and node-cross-spawn's lib/util/escape.js, which this mirrors.
+const META_CHARS_REGEXP = /([()[\]%!^"`<>&|;, *?])/g;
+
+// Windows cannot execute .cmd/.bat files without a shell (CreateProcess only
+// auto-appends .exe for extensionless names), so npm/pnpm/yarn are unreachable
+// via spawn(shell:false) as-is. Resolve the real file via PATH/PATHEXT and, if
+// it isn't a native .exe/.com, run it through cmd.exe ourselves with every
+// argument individually escaped — never by handing Node's own `shell` option
+// a joined string.
+function resolveWindowsExecutable(command) {
+  const hasSeparator = command.includes('/') || command.includes('\\');
+  const baseName = hasSeparator ? path.basename(command) : command;
+  const searchDirs = hasSeparator ? [path.dirname(command)] : (process.env.PATH ?? '').split(path.delimiter);
+  const hasExtension = path.extname(baseName) !== '';
+  const pathExt = (process.env.PATHEXT ?? '.COM;.EXE;.BAT;.CMD').split(';').filter(Boolean);
+
+  for (const dir of searchDirs) {
+    if (!dir) continue;
+    const base = path.join(dir, baseName);
+    if (hasExtension) { if (fs.existsSync(base)) return base; continue; }
+    for (const ext of pathExt) { const candidate = base + ext; if (fs.existsSync(candidate)) return candidate; }
+  }
+  return null;
+}
+
+function escapeCmdCommand(command) { return command.replace(META_CHARS_REGEXP, '^$1'); }
+
+function escapeCmdArgument(arg, doubleEscapeMetaChars) {
+  let value = String(arg);
+  value = value.replace(/(\\*)"/g, '$1$1\\"');
+  value = value.replace(/(\\*)$/, '$1$1');
+  value = `"${value}"`;
+  value = value.replace(META_CHARS_REGEXP, '^$1');
+  if (doubleEscapeMetaChars) value = value.replace(META_CHARS_REGEXP, '^$1');
+  return value;
+}
+
+function windowsCmdShim(executable, childArgs) {
+  const resolved = resolveWindowsExecutable(executable);
+  if (!resolved || EXECUTABLE_EXTENSIONS.has(path.extname(resolved).toLowerCase())) return null;
+  // npm's own package-local .cmd shims (node_modules/.bin/*.cmd) re-run cmd.exe's
+  // own ^-escapes a second time internally, so they need double escaping; the
+  // real npm/pnpm/yarn global commands we actually target do not.
+  const doubleEscapeMetaChars = /node_modules[\\/]\.bin[\\/][^\\/]+\.cmd$/i.test(resolved);
+  const normalized = path.normalize(resolved);
+  const shellCommand = [escapeCmdCommand(normalized), ...childArgs.map((arg) => escapeCmdArgument(arg, doubleEscapeMetaChars))].join(' ');
+  return { file: process.env.ComSpec || 'cmd.exe', args: ['/d', '/s', '/c', `"${shellCommand}"`] };
+}
 
 export function runCommand(args, { cwd, timeout = DEFAULT_TIMEOUT_SECONDS, maxBytes = CAPTURE_MAX_BYTES } = {}) {
   return new Promise((resolve) => {
@@ -33,12 +84,15 @@ export function runCommand(args, { cwd, timeout = DEFAULT_TIMEOUT_SECONDS, maxBy
       });
     };
 
+    const shim = process.platform === 'win32' ? windowsCmdShim(args[0], args.slice(1)) : null;
+
     try {
-      child = spawn(args[0], args.slice(1), {
+      child = spawn(shim ? shim.file : args[0], shim ? shim.args : args.slice(1), {
         cwd,
         shell: false,
         detached: process.platform !== 'win32',
         windowsHide: true,
+        windowsVerbatimArguments: Boolean(shim),
         stdio: ['ignore', 'pipe', 'pipe'],
       });
     } catch (error) {
@@ -49,7 +103,7 @@ export function runCommand(args, { cwd, timeout = DEFAULT_TIMEOUT_SECONDS, maxBy
     child.stdout.on('data', (chunk) => { stdout.append(chunk); interleaved.append(chunk); });
     child.stderr.on('data', (chunk) => { stderr.append(chunk); interleaved.append(chunk); });
     child.on('error', (error) => finish({
-      stderr: `error=command_not_found command=${error.path ?? args[0]}`,
+      stderr: `error=command_not_found command=${shim ? args[0] : error.path ?? args[0]}`,
       exitCode: 127,
       missing: true,
     }));
