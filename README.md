@@ -362,6 +362,10 @@ reported instead of being silently discarded.
 ### `aish test -- <command>`
 
 Runs the command after `--`, preserves the child exit code, and summarizes failures.
+The `--` is optional (`aish test npm test` also works) — it's required only when
+the command's own first token starts with `-`. Prefer including it: PowerShell's
+`$args` binding silently drops a bare, unquoted `--` before it reaches `aish`, so
+if you type it and it's not doing anything, quote it instead (`aish test '--' npm test`).
 
 ```text
 status=failed exit=1 passed=? failed=2 command="python -m pytest"

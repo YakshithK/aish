@@ -21,8 +21,8 @@ function commandHelp(command) {
   const usage = {
     tree: '[path]', view: 'target', search: 'query [path]', status: '[path]', diff: '[--staged] [target]', inspect: '[path]',
     init: '[--force] [--yes] [--no-global] [path]', doctor: '[--agents] [path]',
-    skill: 'print {claude,codex,cursor,opencode,generic}', test: '-- <command...>', build: '-- <command...>', benchmark: '',
-    run: '[--timeout SECONDS] -- <command...>',
+    skill: 'print {claude,codex,cursor,opencode,generic}', test: '[--] <command...>', build: '[--] <command...>', benchmark: '',
+    run: '[--timeout SECONDS] [--] <command...>',
   }[command];
   return `usage: aish ${command}${usage ? ` ${usage}` : ''}\n\n${summaries[command]}\n`;
 }
@@ -78,9 +78,18 @@ export async function dispatch(argv, { observer = observeCommand } = {}) {
     return (await import('./commands/skill.js')).printSkill(args[1]);
   }
   if (command === 'test' || command === 'build') {
-    const separator = args.indexOf('--');
-    if (separator !== 0) usage(`expected="${command} -- <command...>"`);
-    return (await import(`./commands/${command}.js`)).run(args.slice(1));
+    if (!args.length) usage(`expected="${command} [--] <command...>"`);
+    // `--` is accepted for parity with Unix CLI convention and remains
+    // required when the child command's own first token starts with `-`
+    // (ambiguous otherwise), but is optional in the common case — some
+    // shells (PowerShell's `$args` binding) silently drop a bare `--` before
+    // it ever reaches this process, so requiring it unconditionally broke
+    // `aish test -- npm test` for PowerShell users even though it worked
+    // fine in cmd.exe and POSIX shells.
+    if (args[0] !== '--' && args[0].startsWith('-')) usage(`unknown_option=${args[0]}`);
+    const childArgv = args[0] === '--' ? args.slice(1) : args;
+    if (!childArgv.length) usage(`expected="${command} [--] <command...>"`);
+    return (await import(`./commands/${command}.js`)).run(childArgv);
   }
   if (command === 'run') {
     const { childArgv, timeoutSeconds } = parseRunArguments(args);
@@ -91,24 +100,27 @@ export async function dispatch(argv, { observer = observeCommand } = {}) {
 }
 
 function parseRunArguments(args) {
-  const separator = args.indexOf('--');
-  if (separator < 0) usage('expected="run [--timeout SECONDS] -- <command...>"');
-  const controls = args.slice(0, separator);
-  const childArgv = args.slice(separator + 1);
-  if (!childArgv.length) usage('missing=run_command');
+  if (!args.length) usage('missing=run_command');
+  // `--` before the command is optional (see the note in dispatch()); it is
+  // still required to disambiguate when the command's own first token is
+  // `--timeout` or some other `-`-prefixed token we don't recognize.
+  let index = 0;
   let timeoutSeconds = ARBITRARY_TIMEOUT_DEFAULT;
   let seenTimeout = false;
-  for (let index = 0; index < controls.length; index += 1) {
-    const token = controls[index];
-    if (token !== '--timeout') usage(`unknown_option=${token}`);
+  while (args[index] === '--timeout') {
     if (seenTimeout) usage('duplicate_option=--timeout');
-    const raw = controls[++index];
+    const raw = args[index + 1];
     if (raw == null) usage('missing_value=--timeout');
     const value = Number(raw);
     if (!Number.isFinite(value) || value < 0.1 || value > 3600) usage(`invalid_timeout=${raw}`);
     timeoutSeconds = value;
     seenTimeout = true;
+    index += 2;
   }
+  if (args[index] === '--') index += 1;
+  else if (args[index]?.startsWith('-')) usage(`unknown_option=${args[index]}`);
+  const childArgv = args.slice(index);
+  if (!childArgv.length) usage('missing=run_command');
   return { childArgv, timeoutSeconds };
 }
 

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { commands, dispatch, main } from '../src/cli.js';
 import { classifyCommand, normalizeExecutable } from '../src/command-router.js';
-import { observeCommand } from '../src/command-observer.js';
+import { observeCommand, ARBITRARY_TIMEOUT_DEFAULT } from '../src/command-observer.js';
 import { parse as parseBuild } from '../src/parsers/build.js';
 import { parse as parseGeneric } from '../src/parsers/generic.js';
 import { parse as parseHttp } from '../src/parsers/http.js';
@@ -34,7 +34,17 @@ test('missing command, subcommand help, and unknown options match usage semantic
   assert.equal(await main([], io), 2);
 });
 test('every command exposes subcommand help',async()=>{for(const command of commands)assert.match((await dispatch([command,'--help'])).stdout,new RegExp(`usage: aish ${command}`));});
-test('test and build require the argument separator',async()=>{for(const command of['test','build'])await assert.rejects(()=>dispatch([command,process.execPath]),error=>error.exitCode===2&&/expected/.test(error.message));});
+test('test and build accept the command with or without a leading --, reject empty and unknown-flag forms',async()=>{
+  for(const command of['test','build']){
+    await assert.rejects(()=>dispatch([command]),error=>error.exitCode===2&&/expected/.test(error.message));
+    await assert.rejects(()=>dispatch([command,'--']),error=>error.exitCode===2&&/expected/.test(error.message));
+    await assert.rejects(()=>dispatch([command,'--bogus',process.execPath]),error=>error.exitCode===2&&/unknown_option=--bogus/.test(error.message));
+    const withSeparator=await dispatch([command,'--',process.execPath,'-e','process.exit(3)']);
+    assert.equal(withSeparator.exitCode,3);
+    const withoutSeparator=await dispatch([command,process.execPath,'-e','process.exit(3)']);
+    assert.equal(withoutSeparator.exitCode,3);
+  }
+});
 
 test('classifier covers normalized executable shapes and near misses', () => {
   const cases = [
@@ -112,6 +122,16 @@ test('run bypasses native precedence and passes exact argv after the separator',
   assert.deepEqual(received, { argv: ['tree', '$HOME', '*.js'], options: { timeoutSeconds: 10.5 } });
   const native = await dispatch(['tree', '.']);
   assert.match(native.stdout, /root:/);
+});
+
+test('run accepts --timeout and the command without a -- separator', async () => {
+  let received;
+  const observer = async (argv, options) => { received = { argv, options }; return { stdout: '', stderr: '', exitCode: 0 }; };
+  await dispatch(['run', '--timeout', '10.5', 'tree', '$HOME', '*.js'], { observer });
+  assert.deepEqual(received, { argv: ['tree', '$HOME', '*.js'], options: { timeoutSeconds: 10.5 } });
+  received = undefined;
+  await dispatch(['run', 'tree', '$HOME', '*.js'], { observer });
+  assert.deepEqual(received, { argv: ['tree', '$HOME', '*.js'], options: { timeoutSeconds: ARBITRARY_TIMEOUT_DEFAULT } });
 });
 
 test('invalid run grammar exits usage without invoking the observer', async () => {
