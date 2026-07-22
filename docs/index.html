@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>aish — compact terminal observations for AI coding agents</title>
+<meta name="description" content="AgentShell gives AI coding agents compact, evidence-preserving terminal output instead of raw shell noise.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav class="nav">
+  <div class="wordmark wordmark--small">aish<span class="cursor" aria-hidden="true"></span></div>
+  <div class="nav-links">
+    <a href="https://github.com/YakshithK/aish">GitHub</a>
+    <a href="https://www.npmjs.com/package/@yakshith/agentshell">npm</a>
+  </div>
+</nav>
+
+<header class="hero reveal">
+  <div class="wordmark wordmark--hero">aish<span class="cursor" aria-hidden="true"></span></div>
+  <h1>Cut agent context by up to 77%.</h1>
+  <p class="subhead">AI coding agents use terminals designed for humans. AgentShell gives them compact, evidence-preserving observations for repo inspection, file reading, search, git status, diffs, tests, and builds.</p>
+  <div class="cta-row">
+    <button class="btn btn--primary" id="copy-install" data-command="npm i -g @yakshith/agentshell">
+      <span class="btn-text">npm i -g @yakshith/agentshell</span>
+      <span class="btn-copied" aria-hidden="true">copied</span>
+    </button>
+    <a class="btn btn--secondary" href="https://github.com/YakshithK/aish">GitHub</a>
+  </div>
+</header>
+
+<section class="demo reveal" id="demo">
+  <div class="terminal-card terminal-card--hero">
+    <div class="terminal-card__bar">
+      <span class="dot dot--red"></span><span class="dot dot--yellow"></span><span class="dot dot--green"></span>
+      <span class="terminal-card__label">aish demo</span>
+    </div>
+    <div class="terminal-card__body terminal-card__body--media">
+      <video autoplay muted loop playsinline poster="assets/Aish_DemoV2.gif">
+        <source src="assets/Aish_DemoV2.mp4" type="video/mp4">
+      </video>
+    </div>
+  </div>
+</section>
+
+<section class="before-after reveal" id="before-after">
+  <h2>Before / after</h2>
+  <div class="compare">
+    <div class="terminal-card">
+      <div class="terminal-card__bar">
+        <span class="dot dot--red"></span><span class="dot dot--yellow"></span><span class="dot dot--green"></span>
+        <span class="terminal-card__label">python -m pytest</span>
+      </div>
+      <pre class="terminal-card__body">============================= test session starts ==============================
+platform linux -- Python 3.11.4, pytest-7.4.0
+collected 14 items
+
+tests/test_auth.py ..........F.                                       [100%]
+
+=================================== FAILURES ===================================
+_____________________________ test_empty_password ______________________________
+
+    def test_empty_password():
+&gt;       assert login("user", "") == 400
+E       AssertionError: assert 200 == 400
+
+tests/test_auth.py:44: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_auth.py::test_empty_password - AssertionError: assert 200 == 400
+========================= 1 failed, 13 passed in 0.42s ==========================</pre>
+    </div>
+    <div class="terminal-card">
+      <div class="terminal-card__bar">
+        <span class="dot dot--red"></span><span class="dot dot--yellow"></span><span class="dot dot--green"></span>
+        <span class="terminal-card__label">aish test -- python -m pytest</span>
+      </div>
+      <pre class="terminal-card__body">status=failed exit=1 passed=13 failed=1 command="python -m pytest"
+FAIL tests/test_auth.py::test_empty_password AssertionError: assert 200 == 400
+omitted=passing_tests,progress,full_stack_traces
+parser=pytest
+truncated=false</pre>
+    </div>
+  </div>
+</section>
+
+<section class="how-it-works reveal" id="how-it-works">
+  <h2>How it works</h2>
+  <div class="command-grid">
+    <div class="terminal-card">
+      <div class="terminal-card__bar"><span class="terminal-card__label">aish tree</span></div>
+      <pre class="terminal-card__body">project=python files=24 dirs=6 important=pyproject.toml,src,tests
+root: pyproject.toml,src,tests,README.md
+omitted: .git,__pycache__</pre>
+    </div>
+    <div class="terminal-card">
+      <div class="terminal-card__bar"><span class="terminal-card__label">aish view src/auth.py</span></div>
+      <pre class="terminal-card__body">file=src/auth.py lines=284 imports=5 exports=0 funcs=login:22-62,logout:70-110
+use: aish view src/auth.py:22-62
+omitted=full_file</pre>
+    </div>
+    <div class="terminal-card">
+      <div class="terminal-card__bar"><span class="terminal-card__label">aish search login</span></div>
+      <pre class="terminal-card__body">query=login matches=12 files=3 backend=rg
+src/auth.py count=5 lines=22,44,91
+src/LoginPage.tsx count=4 lines=8,31</pre>
+    </div>
+    <div class="terminal-card">
+      <div class="terminal-card__bar"><span class="terminal-card__label">aish status</span></div>
+      <pre class="terminal-card__body">branch=main changed=4 staged=1 unstaged=2 untracked=1
+ M src/auth.py
+A  tests/test_auth.py
+?? notes.md</pre>
+    </div>
+    <div class="terminal-card">
+      <div class="terminal-card__bar"><span class="terminal-card__label">aish diff</span></div>
+      <pre class="terminal-card__body">diff=unstaged files=3 added=42 removed=18
+M src/auth.py +22 -7
+next: aish diff src/auth.py</pre>
+    </div>
+    <div class="terminal-card">
+      <div class="terminal-card__bar"><span class="terminal-card__label">aish test -- &lt;command&gt;</span></div>
+      <pre class="terminal-card__body">status=failed exit=1 passed=? failed=2 command="python -m pytest"
+FAIL tests/test_auth.py::test_empty_password AssertionError: expected 400
+omitted=passing_tests,progress,full_stack_traces</pre>
+    </div>
+    <div class="terminal-card">
+      <div class="terminal-card__bar"><span class="terminal-card__label">aish build -- &lt;command&gt;</span></div>
+      <pre class="terminal-card__body">status=failed exit=2 warnings=1 command="npm install"
+ERROR npm ERR! code ERESOLVE
+omitted=progress,downloads,successful_steps</pre>
+    </div>
+  </div>
+</section>
+
+<section class="agents reveal" id="agents">
+  <h2>Works with your agent</h2>
+  <div class="badge-row">
+    <span class="badge badge--active">claude</span>
+    <span class="badge badge--active">codex</span>
+    <span class="badge badge--active">cursor</span>
+    <span class="badge badge--active">opencode</span>
+  </div>
+  <p>Run <code>aish init</code> once and it writes routing rules so each of these agents prefers <code>aish</code> over raw shell commands automatically.</p>
+</section>
+
+<section class="stats reveal" id="stats">
+  <h2>Measured, not guessed</h2>
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-number">77.2%</div>
+      <div class="stat-caption">smaller git diff output</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">73.1%</div>
+      <div class="stat-caption">smaller pytest failure output</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">5/5</div>
+      <div class="stat-caption">fixtures, evidence fully preserved</div>
+    </div>
+  </div>
+  <p class="stats-note">From <code>aish benchmark</code>, deterministic fixture-backed comparisons of raw vs. compact output. Evidence preserved: paths, line numbers, test IDs, errors, commands, exit codes.</p>
+</section>
+
+<footer class="footer reveal">
+  <div class="footer-links">
+    <a href="https://github.com/YakshithK/aish">GitHub</a>
+    <a href="https://www.npmjs.com/package/@yakshith/agentshell">npm</a>
+    <span>MIT License</span>
+  </div>
+  <p class="launch-ask">What command wastes the most context for your agent?</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
