@@ -1,6 +1,7 @@
 import process from 'node:process';
 import { AishError, EXIT_RUNTIME, EXIT_USAGE, result } from './output.js';
 import { observeCommand, ARBITRARY_TIMEOUT_DEFAULT } from './command-observer.js';
+import { matchCompoundCommand } from './command-router.js';
 
 export const commands = ['tree', 'view', 'search', 'status', 'diff', 'inspect', 'init', 'doctor', 'skill', 'test', 'build', 'benchmark', 'run'];
 const summaries = {
@@ -55,7 +56,8 @@ function atMost(items, count) { if (items.length > count) usage(`unexpected_argu
 export async function dispatch(argv, { observer = observeCommand } = {}) {
   if (argv[0] === '--help' || argv[0] === '-h') return result(help());
   if (!argv.length) usage('missing=command hint="aish --help"');
-  const [command, ...args] = argv;
+  const rewritten = !commands.includes(argv[0]) ? matchCompoundCommand(argv) : null;
+  const [command, ...args] = rewritten ?? argv;
   if (!commands.includes(command)) {
     const output = await observer(argv, { timeoutSeconds: ARBITRARY_TIMEOUT_DEFAULT });
     if (output.exitCode === 127 && /error=command_not_found/u.test(`${output.stdout}${output.stderr}`)) {

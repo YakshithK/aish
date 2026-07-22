@@ -5,7 +5,8 @@
   "type": "module",
   "bin": {
     "aish": "bin/aish.js",
-    "agentshell": "bin/aish.js"
+    "agentshell": "bin/aish.js",
+    "aish-hook-bash": "bin/aish-hook-bash.js"
   },
   "files": [
     "bin/",

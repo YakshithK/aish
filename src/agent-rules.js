@@ -65,6 +65,31 @@ as \`aish view <file>:<start>-<end>\` or \`aish diff <file>\` instead of dumping
 output.
 `;
 
+export const CLAUDE_GLOBAL_MARKER = '<!-- agentshell:global-routing -->';
+
+export const CLAUDE_GLOBAL_INSTRUCTIONS = `${CLAUDE_GLOBAL_MARKER}
+# AgentShell
+
+This is an always-on rule for this machine, not an optional skill to invoke.
+Prefer AgentShell commands before raw shell commands whenever inspecting,
+debugging, reviewing, or modifying a codebase.
+
+${ROUTING_TABLE}
+
+Principle: summary first, exact details only when needed.
+
+Preserve exact paths, line numbers, commands, exit codes, and error names from
+\`aish\` output. If an \`aish\` command omits detail, ask for a narrower range
+such as \`aish view <file>:<start>-<end>\` or \`aish diff <file>\` instead of
+dumping raw output.
+
+A PreToolUse hook already rewrites common raw commands (\`git status\`,
+\`git diff\`, \`cat <file>\`, \`find .\`, \`ls -R\`, \`grep -R\`, and recognized
+test/build invocations) to their \`aish\` equivalent automatically when it can
+do so unambiguously. This section explains why those substitutions happen; it
+is not an action you need to take yourself for those cases.
+`;
+
 export const SKILL_INSTRUCTIONS = `---
 name: agentshell
 description: Use AgentShell when inspecting, debugging, reviewing, or modifying a codebase so terminal observations stay compact and exact.

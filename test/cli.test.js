@@ -46,6 +46,26 @@ test('test and build accept the command with or without a leading --, reject emp
   }
 });
 
+test('compound commands route to the equivalent aish subcommand only for narrow, unambiguous shapes', async () => {
+  assert.match((await dispatch(['git', 'status'])).stdout, /branch=/);
+  assert.match((await dispatch(['git', 'diff'])).stdout, /diff=/);
+  assert.match((await dispatch(['git', 'diff', '--staged'])).stdout, /diff=staged/);
+  assert.match((await dispatch(['git', 'diff', 'README.md'])).stdout, /file=(?:file:)?README\.md/);
+  assert.match((await dispatch(['cat', 'README.md'])).stdout, /file=README.md/);
+  assert.match((await dispatch(['find', '.'])).stdout, /project=/);
+  assert.match((await dispatch(['ls', '-R'])).stdout, /project=/);
+  assert.match((await dispatch(['grep', '-R', 'aish'])).stdout, /query=aish/);
+  assert.match((await dispatch(['grep', '-r', 'aish', 'src'])).stdout, /query=aish/);
+  let received;
+  const observer = async (argv, options) => { received = argv; return { stdout: '', stderr: '', exitCode: 0 }; };
+  await dispatch(['find', '.', '-name', '*.js'], { observer });
+  assert.deepEqual(received, ['find', '.', '-name', '*.js']);
+  await dispatch(['cat', 'a', 'b'], { observer });
+  assert.deepEqual(received, ['cat', 'a', 'b']);
+  await dispatch(['git', 'diff', 'a', 'b'], { observer });
+  assert.deepEqual(received, ['git', 'diff', 'a', 'b']);
+});
+
 test('classifier covers normalized executable shapes and near misses', () => {
   const cases = [
     [['pytest'], 'test'], [['npm', 'test'], 'test'], [['cargo', 'test'], 'test'], [['go', 'test'], 'test'],

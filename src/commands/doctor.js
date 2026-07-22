@@ -23,8 +23,10 @@ export function run(root = '.', agents = false, home) {
   if (missing.length) lines.push(`missing=${missing.join(',')}`);
   if (agents) {
     for (const host of HOSTS) {
-      const install = installsFor(host, home)[0];
-      lines.push(`global_${host}_skill=${fs.existsSync(install.path) ? 'present' : 'missing'} path=${install.path}`);
+      const installs = installsFor(host, home);
+      const presentCount = installs.filter((install) => install.present()).length;
+      const status = presentCount === installs.length ? 'present' : presentCount ? 'partial' : 'missing';
+      lines.push(`global_${host}_skill=${status} path=${installs[0].path}`);
     }
     lines.push(missingGlobalHosts(home).length ? 'agent_suggestion=aish init --yes' : 'agent_suggestion=ready');
   }

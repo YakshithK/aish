@@ -106,13 +106,23 @@ If global routing is missing and you accept the prompt, or run
 files in that run:
 
 ```text
-global_agent_routing=installed created=4 updated=0 skipped=0
-create global host=claude path=/home/me/.claude/skills/agentshell/SKILL.md
+global_agent_routing=installed created=5 updated=0 skipped=0
+create global host=claude path=/home/me/.claude/CLAUDE.md
+create global host=claude path=/home/me/.claude/settings.json
 create global host=codex path=/home/me/.codex/skills/agentshell/SKILL.md
 create global host=cursor path=/home/me/.cursor/rules/agentshell.mdc
 create global host=opencode path=/home/me/.config/opencode/skills/agentshell/SKILL.md
 suggestion=run "aish doctor --agents"
 ```
+
+For Claude Code specifically, global routing is not a skill you invoke — it's
+an always-on rule appended to `~/.claude/CLAUDE.md` (merged in, existing
+content is preserved), plus a `PreToolUse` hook registered in
+`~/.claude/settings.json` that automatically rewrites a narrow set of raw
+commands (`git status`, `git diff`, `cat <file>`, `find .`, `ls -R`,
+`grep -R`, and recognized test/build invocations) to their `aish` equivalent
+before they run. Ambiguous or compound commands (pipes, chaining, multiple
+files, unrecognized flags) are left untouched rather than guessed at.
 
 If global routing is already present, or you decline the prompt, `aish init`
 writes repo-local files:
@@ -140,7 +150,7 @@ them.
 Global routing is installed once per machine/agent host:
 
 ```text
-~/.claude/skills/agentshell/SKILL.md
+~/.claude/CLAUDE.md        (appended rule) + ~/.claude/settings.json (PreToolUse hook)
 ~/.codex/skills/agentshell/SKILL.md
 ~/.cursor/rules/agentshell.mdc
 ~/.config/opencode/skills/agentshell/SKILL.md
@@ -183,10 +193,12 @@ agent_rules=ok present=3 missing=0
 suggestion=ready
 ```
 
-Use `--agents` to include global skill/rule installs:
+Use `--agents` to include global skill/rule installs (`partial` means only one
+of the claude host's two installs — CLAUDE.md rule or PreToolUse hook — is
+present):
 
 ```text
-global_claude_skill=missing path=/home/me/.claude/skills/agentshell/SKILL.md
+global_claude_skill=missing path=/home/me/.claude/CLAUDE.md
 global_codex_skill=missing path=/home/me/.codex/skills/agentshell/SKILL.md
 global_cursor_skill=missing path=/home/me/.cursor/rules/agentshell.mdc
 global_opencode_skill=missing path=/home/me/.config/opencode/skills/agentshell/SKILL.md
