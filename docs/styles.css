@@ -168,6 +168,8 @@ code {
   line-height: 1.6;
   color: var(--text-body);
   white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
   overflow-x: auto;
 }
 .terminal-card__body--media { padding: 0; }
