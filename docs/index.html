@@ -24,22 +24,23 @@
   <h1>Cut agent context by up to 77%.</h1>
   <p class="subhead">AI coding agents use terminals designed for humans. AgentShell gives them compact, evidence-preserving observations for repo inspection, file reading, search, git status, diffs, tests, and builds.</p>
   <div class="cta-row">
-    <button class="btn btn--primary" id="copy-install" data-command="npm i -g @yakshith/agentshell">
+    <button type="button" class="btn btn--primary" id="copy-install" data-command="npm i -g @yakshith/agentshell">
       <span class="btn-text">npm i -g @yakshith/agentshell</span>
-      <span class="btn-copied" aria-hidden="true">copied</span>
+      <span class="btn-copied" role="status" aria-live="polite"></span>
     </button>
     <a class="btn btn--secondary" href="https://github.com/YakshithK/aish">GitHub</a>
   </div>
 </header>
 
+<main>
 <section class="demo reveal" id="demo">
   <div class="terminal-card terminal-card--hero">
     <div class="terminal-card__bar">
-      <span class="dot dot--red"></span><span class="dot dot--yellow"></span><span class="dot dot--green"></span>
+      <span class="dot dot--red" aria-hidden="true"></span><span class="dot dot--yellow" aria-hidden="true"></span><span class="dot dot--green" aria-hidden="true"></span>
       <span class="terminal-card__label">aish demo</span>
     </div>
     <div class="terminal-card__body terminal-card__body--media">
-      <video autoplay muted loop playsinline poster="assets/Aish_DemoV2.gif">
+      <video autoplay muted loop playsinline poster="assets/Aish_DemoV2.gif" aria-label="Demo of aish turning noisy terminal output into compact observations">
         <source src="assets/Aish_DemoV2.mp4" type="video/mp4">
       </video>
     </div>
@@ -51,7 +52,7 @@
   <div class="compare">
     <div class="terminal-card">
       <div class="terminal-card__bar">
-        <span class="dot dot--red"></span><span class="dot dot--yellow"></span><span class="dot dot--green"></span>
+        <span class="dot dot--red" aria-hidden="true"></span><span class="dot dot--yellow" aria-hidden="true"></span><span class="dot dot--green" aria-hidden="true"></span>
         <span class="terminal-card__label">python -m pytest</span>
       </div>
       <pre class="terminal-card__body">============================= test session starts ==============================
@@ -74,7 +75,7 @@ FAILED tests/test_auth.py::test_empty_password - AssertionError: assert 200 == 4
     </div>
     <div class="terminal-card">
       <div class="terminal-card__bar">
-        <span class="dot dot--red"></span><span class="dot dot--yellow"></span><span class="dot dot--green"></span>
+        <span class="dot dot--red" aria-hidden="true"></span><span class="dot dot--yellow" aria-hidden="true"></span><span class="dot dot--green" aria-hidden="true"></span>
         <span class="terminal-card__label">aish test -- python -m pytest</span>
       </div>
       <pre class="terminal-card__body">status=failed exit=1 passed=13 failed=1 command="python -m pytest"
@@ -164,6 +165,7 @@ omitted=progress,downloads,successful_steps</pre>
   </div>
   <p class="stats-note">From <code>aish benchmark</code>, deterministic fixture-backed comparisons of raw vs. compact output. Evidence preserved: paths, line numbers, test IDs, errors, commands, exit codes.</p>
 </section>
+</main>
 
 <footer class="footer reveal">
   <div class="footer-links">
