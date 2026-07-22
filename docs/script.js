@@ -4,28 +4,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const copiedLabel = copyBtn.querySelector('.btn-copied');
     copyBtn.addEventListener('click', async () => {
       const command = copyBtn.dataset.command;
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
+      let copied = false;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
           await navigator.clipboard.writeText(command);
-        } else {
+          copied = true;
+        } catch (err) {
+          // Fall through to the execCommand fallback below.
+        }
+      }
+      if (!copied) {
+        try {
           const textarea = document.createElement('textarea');
           textarea.value = command;
           textarea.style.position = 'fixed';
           textarea.style.opacity = '0';
           document.body.appendChild(textarea);
           textarea.select();
-          document.execCommand('copy');
+          copied = document.execCommand('copy');
           document.body.removeChild(textarea);
+        } catch (err) {
+          copied = false;
         }
+      }
+      if (copied) {
         copyBtn.classList.add('is-copied');
         if (copiedLabel) copiedLabel.textContent = 'copied';
         setTimeout(() => {
           copyBtn.classList.remove('is-copied');
           if (copiedLabel) copiedLabel.textContent = '';
         }, 1500);
-      } catch (err) {
-        // Clipboard unavailable in this context — the command text is
-        // still visible on the button, so failing silently is fine.
+      } else {
+        console.warn('aish: clipboard copy failed; command text is still visible on the button');
       }
     });
   }
